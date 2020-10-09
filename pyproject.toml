@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "funicular"
+version = "0.1.0"
+description = "Explore code with a convenient API"
+authors = ["Erich Blume <blume.erich@gmail.com>"]
+license = "MIT License"
+packages = [
+    { "include" = "funicular", "from" = "src"},
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.0.2"
+pytest-sugar = "^0.9.4"
+mypy = "^0.782"
+black = "^20.8b1"
+pre-commit = "^2.7.1"
+flake8 = "^3.8.3"
+isort = "5.5.2"  # Keep in sync with .pre-commit-config.yaml
+pdbpp = "^0.10.2"
+nox = "^2020.8.22"
+pytest-cov = "^2.10.1"
+flake8-isort = "^4.0.0"
+pytest-xdist = {version = "^2.1.0", extras = ["psutil"]}
+
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+testpaths = ["tests"]
+minversion = "6.0"
+markers = []
+python_functions = ['test_*', 'example_*']
+xfail_strict = true
+# To add more warning filters, use this syntax:
+# https://docs.python.org/3/library/warnings.html#describing-warning-filters
+#     action:message:category:module:line
+filterwarnings = [
+    "error",  # MUST BE FIRST. Promotes all warnings to errors, unless filtered
+]
+
+
+[tool.black]
+line-length = 120  # Keep in sync with .isort.cfg
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
