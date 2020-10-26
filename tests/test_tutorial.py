@@ -6,8 +6,8 @@ Please note that this project has a special test prefix in addition to the
 usual "test_", called "example_". It works the same as with tests, the prefix
 is just to signal intent to the code reader.
 """
-import your_package
+import your_project
 
 
 def example_how_to_use_your_package():
-    assert your_package.a_function()
+    assert your_project.a_function()
