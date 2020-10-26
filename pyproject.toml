@@ -26,10 +26,11 @@ nox = "^2020.8.22"
 pytest-cov = "^2.10.1"
 flake8-isort = "^4.0.0"
 pytest-xdist = {version = "^2.1.0", extras = ["psutil"]}
+pytest-lazy-fixture = "^0.6.3"
 
 
 [tool.pytest.ini_options]
-addopts = "--strict-markers"
+addopts = "--strict-markers --color=yes"
 testpaths = ["tests"]
 minversion = "6.0"
 markers = []
