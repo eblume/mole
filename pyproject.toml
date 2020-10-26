@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "funicular"
+name = "python-template"
 version = "0.1.0"
-description = "Explore code with a convenient API"
+description = "An example basic python project template"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
-license = "MIT License"
+license = "Public Domain"
 packages = [
-    { "include" = "funicular", "from" = "src"},
+    { "include" = "your_project", "from" = "src"},
 ]
 
 
