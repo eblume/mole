@@ -28,6 +28,9 @@ remaining references to `your_project` should automatically result in errors
 during static analysis or testing, and so you may fix them as you resolve those
 errors.
 
+Depending on how you cloned/retrieved this template, you may also wish to remove
+your `origin` remote in git via `git remote remove origin`.
+
 How to Install
 --------------
 
