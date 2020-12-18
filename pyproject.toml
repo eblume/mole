@@ -3,7 +3,7 @@ name = "python-template"
 version = "0.1.0"
 description = "An example basic python project template"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
-license = "Public Domain"
+license = "MIT License"
 packages = [
     { "include" = "your_project", "from" = "src"},
 ]
