@@ -27,13 +27,14 @@ pytest-cov = "^2.10.1"
 flake8-isort = "^4.0.0"
 pytest-xdist = {version = "^2.1.0", extras = ["psutil"]}
 pytest-lazy-fixture = "^0.6.3"
+pytest-mypy = "^0.8.0"
+pytest-flake8 = "^1.0.7"
 
 
 [tool.pytest.ini_options]
-addopts = "--strict-markers --color=yes"
+addopts = "--strict-markers --color=yes --mypy --import-mode=importlib"
 testpaths = ["tests"]
 minversion = "6.0"
-markers = []
 python_functions = ['test_*', 'example_*']
 xfail_strict = true
 # To add more warning filters, use this syntax:
@@ -46,6 +47,16 @@ filterwarnings = [
 
 [tool.black]
 line-length = 120  # Keep in sync with .isort.cfg
+
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_single_line = false
+lexicographical = true
+order_by_type = false
+force_sort_within_sections = true
+line_length = 120 # keep in sync with black
 
 
 [build-system]
