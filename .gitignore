@@ -28,3 +28,4 @@ htmlcov
 .mypy_cache/*
 poetry.lock
 .hypothesis/*
+dist/*

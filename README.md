@@ -4,7 +4,6 @@ Python Project Template
 This project is a basic template for python projects. It uses:
 
 * poetry for virtual environment management, dependency management, and package building
-* nox for repeatable, isolated builds & project automation
 * mypy for static type analysis
 * flake8 for static linting
 * isort for opinionated formatting of package imports
@@ -48,47 +47,31 @@ tool they wish to use, including sdist/wheels.
 How to Test
 -----------
 
-This template uses `pyproject.toml` to track all root and development dependencies,
-including the entire build chain. `nox` is used to handle creating and isolating
-the build/test environment to ensure clean, reproducable builds. `poetry` is
-used by nox to handle installing the project and all dependencies.
+This template uses `pyproject.toml` to track all root and development
+dependencies, including the entire build chain. `poetry` is used to.
+handle installing the project and all dependencies. `pytest` is used to run
+test sessions.
 
-Therefore, there are two ways to go from a fresh `python` installation to building
-and testing `your_project`:
-
-1. Use `poetry` to run nox (and handle installing nox and all other deps)::
+1. Install `poetry` and initialize a new poetry environment.
 
    ```bash
-   # Install poetry on a POSIX system (re-installation is upgrade-or-noop)
+   # Install poetry on a POSIX system (installation is 'upgrade-or-idempotent')
    # (a Windows installer exists as well, see python-poetry.org)
    $ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-
-   $ poetry run nox
+   $ poetry install
    ```
-
-   This will end up installing the requirements twice, though - once for your
-   root project (in a virtual env), and once inside of the `nox` test. This is
-   useful because the project dev-dependencies include packages that help
-   development, e.g. `isort` and `flake8`.
 
    (NB: You can also just `pip install poetry`, but this has
    [known issues](https://python-poetry.org/docs/#alternative-installation-methods-not-recommended).)
 
-2. Use `nox` directly::
+2. Run the test suite
 
    ```bash
-   $ pip install nox
-   $ nox
+   $ poetry run pytest
+   # Alternatively:
+   $ poetry shell
+   your_project-env $ pytest
    ```
-
-   This is obviously much simpler, but then you don't get direct access to
-   `poetry`, `flake8`, `isort`, etc. in your development environment.
-
-
-Of course, you can also simply run `pytest` manually. You might find that doing
-so inside of `poetry shell` is a useful idiom. This is how I edit my projects.
-(I do not use `nox` during development but rather as part of CI / release
-validation.)
 
 How to Develop
 --------------
