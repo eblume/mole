@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "python-template"
-version = "0.2.0"
-description = "An example basic python project template"
+name = "mole-template"
+version = "0.1.0"
+description = "Do some things with to-do lists"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
 license = "MIT License"
 packages = [
