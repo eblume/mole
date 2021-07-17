@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "mole-template"
+name = "mole"
 version = "0.1.0"
 description = "Do some things with to-do lists"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
 license = "MIT License"
 packages = [
-    { "include" = "your_project", "from" = "src"},
+    { "include" = "mole", "from" = "src"},
 ]
 
 
@@ -33,7 +33,8 @@ pytest-xdist = {version = "^2.1.0", extras = ["psutil"]}
 
 
 [tool.pytest.ini_options]
-addopts = "--strict-markers --color=yes --mypy --import-mode=importlib"
+# addopts = "--strict-markers --color=yes --mypy --import-mode=importlib"
+addopts = "--strict-markers --color=yes --mypy"
 testpaths = ["tests"]
 minversion = "6.0"
 python_functions = ['test_*', 'example_*']
