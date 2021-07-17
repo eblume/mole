@@ -1,5 +1,6 @@
 [flake8]
-max-line-length = 120
+# Keep isort, flake8, and black line length in sync
+max-line-length = 100
 max-complexity = 10
 ignore =
     # whitespace before ':'. This is meant to handle `if thing :`, but incorrectly flags `somelist[1 : 5]`.

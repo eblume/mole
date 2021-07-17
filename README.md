@@ -1,6 +1,6 @@
 Python Project Template
 =======================
-Copyright 2020 Erich Blume <blume.erich@gmail.com>
+Copyright 2020, 2021 Erich Blume <blume.erich@gmail.com>
 Provided under the MIT License. See LICENSE for more information.
 
 This project is a basic template for python projects. It uses:
