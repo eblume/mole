@@ -1,0 +1,6 @@
+from .generic import Manager as Manager
+from typing import Any
+
+class CompletedManager(Manager):
+    def get_stats(self): ...
+    def get_all(self, **kwargs: Any): ...

@@ -1,24 +1,24 @@
+import asyncio
 import logging
-from typing import Optional
+from typing import Iterable
 
-from .event_loop import EventLoop
-
-log = logging.getLogger(__name__)
+from .client import Client, DummyClient
+from .services import Service, WhackAMole
 
 
 class Engine:
-    _event_loop: Optional[EventLoop] = None
-
     @property
-    def event_loop(self) -> EventLoop:
-        if self._event_loop is None:
-            log.debug("A new event loop is being created")
-            self._event_loop = EventLoop()
+    def log(self) -> logging.Logger:
+        return logging.getLogger(self.__class__.__name__)
 
-        return self._event_loop
+    def run(self) -> None:
+        self.log.debug("Starting services")
+        for service in self.services():
+            asyncio.run(service.start())
 
-    def run_forever(self) -> None:
-        """Run the engine in a loop 'forever', until a shutdown signal is received."""
+    def services(self) -> Iterable[Service]:
+        yield
 
-        # Execute the event loop.
-        self.event_loop.start()
+    async def get_client(self) -> Client:
+        # TODO real client. Async.
+        return DummyClient()
