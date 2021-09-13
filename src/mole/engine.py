@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import logging
+from pathlib import Path
 from typing import Optional
 
 import todoist
@@ -30,10 +31,8 @@ class Engine:
 
     # Sync Methods
 
-    def __init__(self) -> None:
-        # TODO - allow command line and env overrides, via click maybe?
-        # TODO - add --config parameter to click, pass to load_via_env
-        self.config = Config.load_via_env()
+    def __init__(self, config: Path) -> None:
+        self.config = Config.load_via_module(config)
 
     @property
     def log(self) -> logging.Logger:
@@ -61,9 +60,10 @@ class Engine:
 
     async def process_sync(self, sync_data):
         # TODO: actually do something with this sync_data to create a synchronous client, maybe?
-        if 'error' in sync_data:
+        if "error" in sync_data:
             raise SyncError(sync_data)
 
     async def api_test(self):
         client = await self.get_client()
+        client.sync()
         # TODO write api stuff here, delete this eventually, lol
