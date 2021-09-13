@@ -14,17 +14,19 @@ class EngineAlreadyRunning(Exception):
         super().__init__(self, "The engine is already running.")
 
 
+class SyncError(Exception):
+    pass
+
+
 class Engine:
     # Instance variables
 
     config: Config
     client: Optional[todoist.TodoistAPI] = None
-    whack_a_mole_item: Optional[todoist.models.Item] = None
 
     # Constants
 
     SYNC_INTERVAL = dt.timedelta(seconds=5)  # TODO tune down when live
-    WHACKAMOLE_INTERVAL = dt.timedelta(seconds=5)  # TODO tune down when live
 
     # Sync Methods
 
@@ -45,32 +47,8 @@ class Engine:
     async def start(self) -> None:
         self.log.debug("Starting async tasks")
         # In the future, when multiple loops exist, use `await asyncio.gather(...)`
-        await self.whack_a_mole_loop()
+        await self.api_test()
         self.log.debug("Exiting successfully after gathering scheduled tasks")
-
-    async def whack_a_mole_loop(self) -> None:
-        while True:  # TODO exit signal
-            self.log.debug("whack_a_mole_loop")
-            client = await self.get_client()
-            await self.whack_a_mole(client)
-            await asyncio.sleep(self.WHACKAMOLE_INTERVAL.total_seconds())
-
-    async def whack_a_mole(self, client: todoist.TodoistAPI) -> None:
-        self.log.debug("whack_a_mole")
-
-        if self.whack_a_mole_item is None:
-            item = client.items.add("Click me!")
-            client.commit()
-            self.whack_a_mole_item = item
-        else:
-            self.whack_a_mole_item.update()
-            client.commit()
-
-        if self.whack_a_mole_item['checked']:
-            self.log.info("oh no, someone whacked the mole")
-            item = client.items.add("Click me too!")
-            client.commit()
-            self.whack_a_mole_item = item
 
     async def get_client(self) -> todoist.TodoistAPI:
         # Note: this is async so that in the future we can maybe use asyncio.Condition or some other
@@ -78,4 +56,14 @@ class Engine:
         # running in to issues with asyncio + todoist. Hopefully, until then, this bodge will hold.
         if self.client is None:
             self.client = todoist.TodoistAPI(self.config.api_key)
+            await self.process_sync(self.client.sync())
         return self.client
+
+    async def process_sync(self, sync_data):
+        # TODO: actually do something with this sync_data to create a synchronous client, maybe?
+        if 'error' in sync_data:
+            raise SyncError(sync_data)
+
+    async def api_test(self):
+        client = await self.get_client()
+        # TODO write api stuff here, delete this eventually, lol
