@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from pathlib import Path
 
 import click
 
@@ -10,9 +11,8 @@ logging.basicConfig(
 )
 
 
+@click.argument("script", type=click.Path(exists=True, path_type=Path))
 @click.command()
-def cli():
-    click.echo("Let's play whack-a-mole")
-
-    engine = Engine()
+def cli(script: Path):
+    engine = Engine(script)
     engine.run_forever()

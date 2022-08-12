@@ -6,7 +6,11 @@ import importlib.util
 from pathlib import Path
 
 
-@dataclass(frozen=True)
+class ConfigError(Exception):
+    pass
+
+
+@dataclass
 class Config:
     verbose: bool = False
     debug: bool = False
@@ -14,9 +18,13 @@ class Config:
 
     @classmethod
     def load_via_module(cls, path: Path) -> Config:
+        # TODO - make this all less fragile, etc.
         user_spec = importlib.util.spec_from_file_location("user_spec", path)
         assert user_spec is not None
+        assert user_spec.loader is not None
         config_module = importlib.util.module_from_spec(user_spec)
-        config = user_spec.loader.exec_module(config_module).config  # type: ignore
+        user_spec.loader.exec_module(config_module)
+        assert hasattr(config_module, "config")
+        config = config_module.config
         assert isinstance(config, cls)
         return config

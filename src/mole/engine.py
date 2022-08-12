@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import asyncio
 import datetime as dt
 import logging
@@ -12,7 +13,7 @@ from .config import Config
 class EngineAlreadyRunning(Exception):
     def __init__(self, *args, **kwargs):
         # TODO: Find a better way to word this to explain that engines are kinda singletons.
-        super().__init__(self, "The engine is already running.")
+        super().__init__(self, "The engine is already running.", *args, **kwargs)
 
 
 class SyncError(Exception):
@@ -31,8 +32,8 @@ class Engine:
 
     # Sync Methods
 
-    def __init__(self, config: Path) -> None:
-        self.config = Config.load_via_module(config)
+    def __init__(self, config_file: Path) -> None:
+        self.config = Config.load_via_module(config_file)
 
     @property
     def log(self) -> logging.Logger:

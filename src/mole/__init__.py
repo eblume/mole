@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
+from .config import Config
 
-
-def a_function() -> bool:
-    return True
+__all__ = ["Config"]
