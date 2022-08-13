@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import datetime as dt
 import logging
 from pathlib import Path
 from typing import Optional
 
-import todoist
-
 from .config import Config
+from .todoist import TodoistAPI
 
 
 class EngineAlreadyRunning(Exception):
@@ -24,11 +22,7 @@ class Engine:
     # Instance variables
 
     config: Config
-    client: Optional[todoist.TodoistAPI] = None
-
-    # Constants
-
-    SYNC_INTERVAL = dt.timedelta(seconds=5)  # TODO tune down when live
+    client: Optional[TodoistAPI] = None
 
     # Sync Methods
 
@@ -39,32 +33,26 @@ class Engine:
     def log(self) -> logging.Logger:
         return logging.getLogger(self.__class__.__name__)
 
-    def run_forever(self) -> None:
-        asyncio.run(self.start())
+    def start(self) -> None:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.gather(self.main()))
 
     # Async Methods
 
-    async def start(self) -> None:
+    async def main(self) -> None:
         self.log.debug("Starting async tasks")
-        # In the future, when multiple loops exist, use `await asyncio.gather(...)`
-        await self.api_test()
-        self.log.debug("Exiting successfully after gathering scheduled tasks")
+        client = await self.get_client()
+        task = asyncio.create_task(client.start())
+        # TODO do useful things here
+        await asyncio.sleep(60)
+        await client.stop()
+        await task
 
-    async def get_client(self) -> todoist.TodoistAPI:
+    async def get_client(self) -> TodoistAPI:
         # Note: this is async so that in the future we can maybe use asyncio.Condition or some other
         # such construct to be smarter about the lifecycle of the client, and be sure that we aren't
         # running in to issues with asyncio + todoist. Hopefully, until then, this bodge will hold.
         if self.client is None:
-            self.client = todoist.TodoistAPI(self.config.api_key)
-            await self.process_sync(self.client.sync())
+            self.client = TodoistAPI.from_api_key(self.config.api_key)
+            self.client.debug = self.config.debug
         return self.client
-
-    async def process_sync(self, sync_data):
-        # TODO: actually do something with this sync_data to create a synchronous client, maybe?
-        if "error" in sync_data:
-            raise SyncError(sync_data)
-
-    async def api_test(self):
-        client = await self.get_client()
-        client.sync()
-        # TODO write api stuff here, delete this eventually, lol

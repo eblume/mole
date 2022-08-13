@@ -15,4 +15,4 @@ logging.basicConfig(
 @click.command()
 def cli(script: Path):
     engine = Engine(script)
-    engine.run_forever()
+    engine.start()

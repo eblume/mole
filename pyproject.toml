@@ -12,30 +12,27 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 click = ">=8.0.1"
-todoist-python = ">=8.1.3"
 tzlocal = ">=2.1"
-
-
-[tool.poetry.dev-dependencies]
-black = { version = "22.6.0", allow-prereleases = true}
-flake8 = "5.0.4"  # Keep in sync with .pre-commit-config.yaml
-flake8-isort = "^4.2"
-isort = "5.10.0"  # Keep in sync with .pre-commit-config.yaml
-mypy = "0.971"  # Keep in sync with .pre-commit-config.yaml
-pre-commit = "^2.20"
-pytest = "^6.0"
-pytest-cov = "^2.10"
-pytest-flake8 = "^1.0"
-pytest-lazy-fixture = "^0.6"
-pytest-mypy = "^0.8"
-pytest-sugar = "^0.9"
-pytest-xdist = {version = "^2.1", extras = ["psutil"]}
-pdbpp = "^0.10"
+requests = "^2.28.1"
 
 
 [tool.poetry.scripts]
 mole = 'mole.__main__:cli'
 
+
+[tool.poetry.group.dev.dependencies]
+types-requests = "^2.28.8"  # Keep in sync with .pre-commit-config.yaml
+black = { version = "22.6.0", allow-prereleases = true}
+isort = "5.10.0"  # Keep in sync with .pre-commit-config.yaml
+mypy = "0.971"  # Keep in sync with .pre-commit-config.yaml
+pre-commit = "^2.20"
+pytest = "^6.0"
+pytest-cov = "^2.10"
+pytest-lazy-fixture = "^0.6"
+pytest-mypy = "^0.8"
+pytest-sugar = "^0.9"
+pytest-xdist = {version = "^2.1", extras = ["psutil"]}
+pdbpp = "^0.10"
 
 
 [tool.pytest.ini_options]
@@ -54,7 +51,7 @@ filterwarnings = [
 
 
 [tool.black]
-line-length = 100  # Keep isort, flake8, and black line length in sync
+line-length = 100  # Keep isort and black line length in sync
 
 
 [tool.isort]
@@ -64,7 +61,7 @@ force_single_line = false
 lexicographical = true
 order_by_type = false
 force_sort_within_sections = true
-line_length = 100 # Keep isort, flake8, and black line length in sync
+line_length = 100 # Keep isort and black line length in sync
 
 [tool.mypy]
 warn_redundant_casts = true

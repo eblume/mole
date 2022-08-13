@@ -29,3 +29,7 @@ htmlcov
 poetry.lock
 .hypothesis/*
 dist/*
+
+
+# Important: do not check in api keys! (like todoist.key)
+*.key
