@@ -2,10 +2,10 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
+from signal import SIGINT, SIGTERM
 
 from .config import Config
-from .todoist import TodoistAPI
+from .remote import SyncClient
 
 
 class EngineAlreadyRunning(Exception):
@@ -22,7 +22,6 @@ class Engine:
     # Instance variables
 
     config: Config
-    client: Optional[TodoistAPI] = None
 
     # Sync Methods
 
@@ -35,24 +34,29 @@ class Engine:
 
     def start(self) -> None:
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.gather(self.main()))
+        try:
+            self.log.debug("Main event loop starting")
+            loop.run_until_complete(self.run())
+            loop.run_forever()
+            self.log.debug("Main event loop complete")
+        finally:
+            self.log.debug("Main event loop closing")
+            loop.close()
+            self.log.debug("Main event loop closed")
+            loop.stop()
+
+        self.log.debug("Engine.start() returned")
 
     # Async Methods
 
-    async def main(self) -> None:
-        self.log.debug("Starting async tasks")
-        client = await self.get_client()
-        task = asyncio.create_task(client.start())
-        # TODO do useful things here
-        await asyncio.sleep(60)
-        await client.stop()
-        await task
+    async def run(self) -> None:
+        # This function should so whatever setup is needed to create independent isolated subprocesses,
+        # and then call their main functions in a `gather` call at the end.
 
-    async def get_client(self) -> TodoistAPI:
-        # Note: this is async so that in the future we can maybe use asyncio.Condition or some other
-        # such construct to be smarter about the lifecycle of the client, and be sure that we aren't
-        # running in to issues with asyncio + todoist. Hopefully, until then, this bodge will hold.
-        if self.client is None:
-            self.client = TodoistAPI.from_api_key(self.config.api_key)
-            self.client.debug = self.config.debug
-        return self.client
+        sync_client = self.config.make_client(self)
+        # printer = ItemEventPrinter(self)
+
+        asyncio.gather(
+            # self.printer.run(),
+            sync_client.run(),
+        )

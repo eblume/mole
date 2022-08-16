@@ -15,13 +15,18 @@ API servers, and emits events relevant sync events.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import datetime as dt
 from enum import Enum
 import logging
-from typing import List, Optional, Set
+from typing import List, TYPE_CHECKING
 
 import requests
+
+from .remote import SyncClient
+
+if TYPE_CHECKING:
+    from .engine import Engine
 
 
 class Resources(Enum):
@@ -45,85 +50,47 @@ class Resources(Enum):
 
 
 @dataclass
+class TodoistSyncClient(SyncClient):
+    engine: Engine
+    api: TodoistAPI
+    sync_period: dt.timedelta = dt.timedelta(minutes=5)
+
+    @classmethod
+    def from_oauth(cls) -> TodoistSyncClient:
+        raise NotImplementedError("Not implemented (yet)")  # TODO
+
+    @classmethod
+    def from_api_key(cls, engine: Engine) -> TodoistSyncClient:
+        """Use a developer API key to create a TodoistAPI client connection.
+
+        The API key will be retrieved from `engine.config.api_key`.
+        """
+        session = requests.Session()
+        session.headers.update({"Authorization": f"Bearer {engine.config.api_key}"})
+        api = TodoistAPI(session=session)
+        client = TodoistSyncClient(engine=engine, api=api)
+        if client.engine.config.debug:
+            client.log.debug("Debug synchronization mode: sync_period set to 10 seconds")
+            client.sync_period = dt.timedelta(seconds=10)
+        return client
+
+    async def run(self):
+        while True:
+            await self.api.synchronize()
+            await asyncio.sleep(self.sync_period.total_seconds())
+
+
+@dataclass
 class TodoistAPI:
     session: requests.Session
-    sync_tasks: Set[asyncio.Task] = field(default_factory=set)
     base_url: str = "https://api.todoist.com/sync/v9/sync"
-    sync_period: dt.timedelta = dt.timedelta(minutes=5)
     sync_token: str = "*"
-    debug: bool = False
-    sync_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     @property
     def log(self) -> logging.Logger:
         return logging.getLogger(self.__class__.__name__)
 
-    @classmethod
-    def from_oauth(cls) -> TodoistAPI:
-        """Use OAuth to create a TodoistAPI client connection."""
-        raise NotImplementedError("Not implemented (yet)")  # TODO
-
-    @classmethod
-    def from_api_key(cls, key: str) -> TodoistAPI:
-        """Use a developer API token to create a TodoistAPI client connection."""
-        session = requests.Session()
-        session.headers.update({"Authorization": f"Bearer {key}"})
-        return TodoistAPI(session=session)
-
-    async def start(self) -> None:
-        """(Re)Start synchronizing with the todoist API servers via asyncio.Task"""
-        if self.sync_tasks:
-            return
-        self.log.debug("Starting new synchronization loop")
-        task = asyncio.create_task(self.do_sync())
-        self.sync_tasks.add(task)
-        task.add_done_callback(self.sync_tasks.discard)
-        await task
-
-    async def stop(self) -> None:
-        if not self.sync_tasks:
-            return
-        self.log.debug("Stopping synchronization loop")
-        for task in self.sync_tasks:
-            task.cancel()
-        await asyncio.gather(*self.sync_tasks)
-
-    async def do_sync(self) -> None:
-        """Async loop handler for synchronization.
-
-        This coroutine calls the synchronize method with Resources._all, and then
-        schedules the next synchronization.
-        """
-        if self.debug:
-            self.log.debug("Debug synchronization mode: sync_period set to 10 seconds")
-            self.sync_period = dt.timedelta(seconds=10)
-
-        while True:
-            # Wait on the lock for up to sync_period / 2
-            await self.synchronize(
-                timeout=dt.timedelta(seconds=self.sync_period.total_seconds() / 2)
-            )
-            # Sleep for sync_period
-            await asyncio.sleep(self.sync_period.total_seconds())
-
-    async def synchronize(
-        self, resources: List[Resources] = [Resources._all], timeout: Optional[dt.timedelta] = None
-    ) -> None:
-        # NB: If we passed in (and returned) a token we could in theory make this concurrent, but I think a better model
-        # is to have one single 'thread' of synhronization... this means that the `resources` argument is not currently
-        # very useful, though. Someday I might look in to concurrent sync strategies if eg. a UI really wants to refresh
-        # just one kind of resource *right now*. Some issues: how to handle sync failures? Commits? Events? State?
-        if timeout is None:
-            await self.sync_lock.acquire()
-        else:
-            try:
-                await asyncio.wait_for(self.sync_lock.acquire(), timeout.total_seconds())
-            except asyncio.TimeoutError:
-                self.log.warn(
-                    "API synchronization lock timeout, has the synchronization thread frozen?"
-                )
-                return
-
+    async def synchronize(self, resources: List[Resources] = [Resources._all]) -> None:
         # requested_resources is a STRING (not array!!) with a special format, eg.: '["labels", "projects"]'
         if Resources._all in resources:
             # if resources contains Resources._all, it's a special case and all other resource types are ignored.
@@ -132,24 +99,21 @@ class TodoistAPI:
             quoted_resources = ",".join(f'"{r.value}"' for r in resources)
             requested_resources = f"[{quoted_resources}]"
 
-        # Guarded by self.sync_lock via above:
-        try:
-            payload = {
-                "sync_token": self.sync_token,
-                "resource_types": requested_resources,
-            }
-            self.log.debug("Sending new sync request for token %s", self.sync_token)
-            response = self.session.post(self.base_url, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            self.log.debug("Sync request response received")
+        payload = {
+            "sync_token": self.sync_token,
+            "resource_types": requested_resources,
+        }
 
-            # Update the next sync token
-            self.sync_token = data["sync_token"]
+        self.log.debug("Sending new sync request for token %s", self.sync_token)
+        # TODO - move to aiohttp or some other asyncio-compatible request library, so we don't block everything here
+        response = self.session.post(self.base_url, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        self.log.debug("Sync request response received")
 
-            # TODO - actually handle the response, correctly
-            for item in data["items"]:
-                self.log.debug("Item synchronized: %s", item["content"])
+        # Update the next sync token
+        self.sync_token = data["sync_token"]
 
-        finally:
-            self.sync_lock.release()
+        # TODO - actually handle the response, correctly
+        for item in data["items"]:
+            self.log.debug("Item synchronized: %s", item["content"])
