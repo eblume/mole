@@ -19,11 +19,14 @@ from dataclasses import dataclass
 import datetime as dt
 from enum import Enum
 import logging
-from typing import List, TYPE_CHECKING
+from typing import Any, Iterable, List, TYPE_CHECKING
 
 import requests
 
+from mole.models import Task
+
 from .remote import SyncClient
+from .store import Store, StoreUpdater
 
 if TYPE_CHECKING:
     from .engine import Engine
@@ -67,7 +70,7 @@ class TodoistSyncClient(SyncClient):
         """
         session = requests.Session()
         session.headers.update({"Authorization": f"Bearer {engine.config.api_key}"})
-        api = TodoistAPI(session=session)
+        api = TodoistAPI(store=engine.store, session=session)
         client = TodoistSyncClient(engine=engine, api=api)
         if client.engine.config.debug:
             client.log.debug("Debug synchronization mode: sync_period set to 10 seconds")
@@ -75,6 +78,9 @@ class TodoistSyncClient(SyncClient):
         return client
 
     async def run(self):
+        """Run 'forever', periodically polling the synchronization API"""
+        # NB: In the future, I may want to allow for a shutdown event. But for now, I'm letting
+        # the KeyboardInterrupt from a ctrl+c be that shutdown event.
         while True:
             await self.api.synchronize()
             await asyncio.sleep(self.sync_period.total_seconds())
@@ -82,6 +88,7 @@ class TodoistSyncClient(SyncClient):
 
 @dataclass
 class TodoistAPI:
+    store: Store
     session: requests.Session
     base_url: str = "https://api.todoist.com/sync/v9/sync"
     sync_token: str = "*"
@@ -104,16 +111,30 @@ class TodoistAPI:
             "resource_types": requested_resources,
         }
 
-        self.log.debug("Sending new sync request for token %s", self.sync_token)
+        self.log.info("Sending new sync request for token %s", self.sync_token)
         # TODO - move to aiohttp or some other asyncio-compatible request library, so we don't block everything here
+        # (this is crucial or else we may as well have been non-async...)
         response = self.session.post(self.base_url, json=payload)
         response.raise_for_status()
         data = response.json()
         self.log.debug("Sync request response received")
+        self.log.debug(data)
 
         # Update the next sync token
         self.sync_token = data["sync_token"]
 
-        # TODO - actually handle the response, correctly
-        for item in data["items"]:
-            self.log.debug("Item synchronized: %s", item["content"])
+        # Create a StoreUpdate from this data
+        update = TodoistUpdater(data)
+        await self.store.update(update)
+
+
+@dataclass
+class TodoistUpdater(StoreUpdater):
+    data: dict[str, Any]
+
+    def new_tasks(self) -> Iterable[Task]:
+        for item in self.data.get("items", []):
+            yield Task(name=item["content"])
+
+    def should_clear(self) -> bool:
+        return self.data.get("full_sync", False)

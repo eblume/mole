@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import logging
 from pathlib import Path
 
-import click
-
-from .engine import Engine
+from .config import Config
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
 )
 
 
-@click.argument("script", type=click.Path(exists=True, path_type=Path))
-@click.command()
 def cli(script: Path):
-    engine = Engine(script)
-    engine.start()
+    config = Config.load_via_module(script)
+    engine = config.make_engine()
+    asyncio.run(engine.run())

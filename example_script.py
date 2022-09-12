@@ -12,4 +12,4 @@ key = key_file.read_text().strip()
 if not re.match("[0-9a-f]{40}", key):
     raise ValueError(f"Invalid key found in {str(key_file)}")
 
-config = Config(debug=True, verbose=True, api_key=key, remote="todoist")
+config = Config(api_key=key, remote="todoist")
