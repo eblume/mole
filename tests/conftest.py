@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
+from typing import Iterable
+
 import pytest
+from utils import FakeSyncClient
 
 import mole
 
 
 @pytest.fixture()
-def config() -> mole.Config:
-    return mole.Config(debug=True, api_key="TestFakeCreds")
+def client() -> mole.SyncClient:
+    return FakeSyncClient()
+
+
+@pytest.fixture()
+def config(client: mole.SyncClient, mocker) -> mole.Config:
+    config = mole.Config(debug=True, api_key="TestFakeCreds")
+    mocker.patch.object(config, "make_client", lambda *_: client)
+    return config
 
 
 @pytest.fixture()

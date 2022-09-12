@@ -33,6 +33,7 @@ pytest-mypy = "^0.8"
 pytest-sugar = "^0.9"
 pytest-xdist = {version = "^2.1", extras = ["psutil"]}
 pdbpp = "^0.10"
+pytest-mock = "^3.8.2"
 
 
 [tool.pytest.ini_options]
