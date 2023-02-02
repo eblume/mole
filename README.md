@@ -1,6 +1,6 @@
 Mole
 =======================
-Copyright 2020, 2021 Erich Blume <blume.erich@gmail.com>
+Copyright 2023 Erich Blume <blume.erich@gmail.com>
 Provided under the MIT License. See LICENSE for more information.
 
 Mole is a thing I made to interact with my to-do lists. I've got big plans, but I'm going to start

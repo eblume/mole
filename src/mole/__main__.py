@@ -1,8 +1,23 @@
 # -*- coding: utf-8 -*-
+import logging
+from pathlib import Path
+
 import typer
 
-from .cli import cli
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
+)
 
-if __name__ == "__main__":
-    # It always SHOULD be, but let's check anyway.
+
+def cli(script: Path):
+    print(script)
+
+
+# Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
+def main():
     typer.run(cli)
+
+
+# Default entrypoint for python -m mole here:
+if __name__ == "__main__":
+    main()
