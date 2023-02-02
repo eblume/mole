@@ -16,7 +16,7 @@ typer = {extras = ["all"], version = "^0.7"}
 
 
 [tool.poetry.scripts]
-mole = 'mole.__main__:cli'
+mole = 'mole.__main__:main'
 
 
 [tool.poetry.group.dev.dependencies]
