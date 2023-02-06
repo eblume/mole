@@ -18,3 +18,7 @@ class Session:
         if len(todays_tasks) == 0:
             actions.create_task.append(Task(name="Whack-a-Mole", date=today, completed=False))
         return actions
+
+    def resolve_actions(self, actions: Actions):
+        for task in actions.create_task:
+            self.remote.create_task(task)

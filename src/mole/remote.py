@@ -39,7 +39,5 @@ class Remote(abc.ABC, Generic[RemoteConfigT]):
         raise NotImplemented
 
     @abc.abstractmethod
-    def create_task(
-        self, name: str, date: Optional[dt.date] = None, completed: bool = False
-    ) -> None:
+    def create_task(self, task: Task):
         raise NotImplemented

@@ -45,10 +45,8 @@ class DummyRemote(Remote[DummyRemoteConfig]):
             if task.date == date and task.name == name and task.completed == completed
         ]
 
-    def create_task(self, name: str, date: Optional[dt.date] = None, completed: bool = False):
-        if date is None:
-            date = dt.date.today()
-        self._tasks.append(Task(name=name, completed=completed, date=date))
+    def create_task(self, task: Task):
+        self._tasks.append(task)
 
 
 @pytest.fixture(params=[True, False])
@@ -92,9 +90,9 @@ def remote(
 ):
     new_remote = DummyRemote.from_config(remote_config)
     if create_previous_task:
-        new_remote.create_task("Whack-a-Mole", completed=True, date=today)
+        new_remote.create_task(Task("Whack-a-Mole", completed=True, date=today))
     if create_next_task:
-        new_remote.create_task("Whack-a-Mole", completed=False, date=today)
+        new_remote.create_task(Task("Whack-a-Mole", completed=False, date=today))
     return new_remote
 
 
@@ -143,3 +141,15 @@ def test_case_1_should_create_whack_task(
 
     actions = session.determine_actions()
     assert actions == expected_actions
+
+
+@pytest.mark.parametrize("create_next_task", [False], indirect=True)
+def test_case_1_would_remotely_crate_whack_ask(create_next_task, today, session, mocker):
+    mocker.patch.object(session.remote, "create_task")
+
+    actions = session.determine_actions()
+    session.resolve_actions(actions)
+
+    assert session.remote.create_task.called_once_with(
+        Task(name="Whack-a-Mole", date=today, completed=False)
+    )
