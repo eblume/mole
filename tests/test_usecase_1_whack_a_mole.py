@@ -8,7 +8,6 @@ to the shell to test the cli. Instead, tests will confirm use case support in mo
 from __future__ import annotations
 
 from dataclasses import dataclass
-import datetime as dt
 from typing import Optional, Type
 
 from _pytest.fixtures import SubRequest
@@ -34,16 +33,8 @@ class DummyRemote(Remote[DummyRemoteConfig]):
     def from_config(cls: Type[DummyRemote], config: DummyRemoteConfig) -> DummyRemote:
         return cls([], config)
 
-    def get_tasks(
-        self, date: Optional[dt.date] = None, name: str = "", completed: bool = False
-    ) -> list[Task]:
-        if date is None:
-            date = dt.date.today()
-        return [
-            task
-            for task in self._tasks
-            if task.date == date and task.name == name and task.completed == completed
-        ]
+    def get_tasks(self) -> list[Task]:
+        return self._tasks
 
     def create_task(self, task: Task):
         self._tasks.append(task)
@@ -62,37 +53,27 @@ def create_next_task(request: SubRequest) -> bool:
 
 
 @pytest.fixture
-def next_task(remote: Remote, today: dt.date):
+def next_task(remote: Remote):
     """The 'next' task represents a potentially existing already (or not!) task.
 
     If it exists, it represents a task created just prior to the test running.
 
     If it does not exist, then it represents a contract that no such task exists, ie the test should make it now.
     """
-    tasks = remote.get_tasks(date=today, name="Whack-a-Mole", completed=False)
-    if len(tasks) > 0:
-        return tasks[0]
+    tasks = remote.get_tasks()
+    for task in tasks:
+        if task.name == "Whack-a-Mole" and task.completed == False:
+            return task
     return None
 
 
 @pytest.fixture
-def today():
-    # Fixture used so we can eventually test with assumptions about the date
-    return dt.date.today()
-
-
-@pytest.fixture
-def remote(
-    remote_config: DummyRemoteConfig,
-    create_previous_task: bool,
-    create_next_task: bool,
-    today: dt.date,
-):
+def remote(remote_config: DummyRemoteConfig, create_previous_task: bool, create_next_task: bool):
     new_remote = DummyRemote.from_config(remote_config)
     if create_previous_task:
-        new_remote.create_task(Task("Whack-a-Mole", completed=True, date=today))
+        new_remote.create_task(Task("Whack-a-Mole", completed=True))
     if create_next_task:
-        new_remote.create_task(Task("Whack-a-Mole", completed=False, date=today))
+        new_remote.create_task(Task("Whack-a-Mole", completed=False))
     return new_remote
 
 
@@ -102,11 +83,12 @@ def remote_config():
 
 
 @pytest.fixture
-def previous_task(remote: Remote, today: dt.date):
+def previous_task(remote: Remote):
     """The 'previous' task represents some task "in the past", prior to the 'next' task."""
-    tasks = remote.get_tasks(date=today, name="Whack-a-Mole", completed=True)
-    if len(tasks) > 0:
-        return tasks[0]
+    tasks = remote.get_tasks()
+    for task in tasks:
+        if task.name == "Whack-a-Mole" and task.completed == True:
+            return task
     return None
 
 
@@ -121,7 +103,7 @@ def session(remote: Remote):
     indirect=["create_next_task"],
 )
 def test_case_1_should_create_whack_task(
-    create_next_task, should_create_task, previous_task, next_task, session, today
+    create_next_task, should_create_task, previous_task, next_task, session
 ):
     """Given a variety of setup conditions, determine whether or not a mole whacking task should be created."""
     # Precondition: if there's a previously defined task, it's completed
@@ -137,19 +119,17 @@ def test_case_1_should_create_whack_task(
     # Create the expectation - an empty action set, or a single create action
     expected_actions = Actions()
     if should_create_task:
-        expected_actions.create_task.append(Task(name="Whack-a-Mole", date=today, completed=False))
+        expected_actions.create_task.append(Task(name="Whack-a-Mole", completed=False))
 
     actions = session.determine_actions()
     assert actions == expected_actions
 
 
 @pytest.mark.parametrize("create_next_task", [False], indirect=True)
-def test_case_1_would_remotely_crate_whack_ask(create_next_task, today, session, mocker):
+def test_case_1_would_remotely_crate_whack_ask(create_next_task, session, mocker):
     mocker.patch.object(session.remote, "create_task")
 
     actions = session.determine_actions()
     session.resolve_actions(actions)
 
-    assert session.remote.create_task.called_once_with(
-        Task(name="Whack-a-Mole", date=today, completed=False)
-    )
+    assert session.remote.create_task.called_once_with(Task(name="Whack-a-Mole", completed=False))

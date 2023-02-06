@@ -31,5 +31,5 @@ poetry.lock
 dist/*
 
 
-# Important: do not check in api keys! (like todoist.key)
+# Important: do not check in api keys! (like motion.key)
 *.key

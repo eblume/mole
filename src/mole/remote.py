@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import abc
-import datetime as dt
-from typing import Generic, Optional, Type, TYPE_CHECKING, TypeVar
+import logging
+from typing import Generic, Type, TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     from .task import Task
@@ -33,11 +33,13 @@ class Remote(abc.ABC, Generic[RemoteConfigT]):
         raise NotImplemented
 
     @abc.abstractmethod
-    def get_tasks(
-        self, date: Optional[dt.date] = None, name: str = "", completed: bool = False
-    ) -> list[Task]:
+    def get_tasks(self) -> list[Task]:
         raise NotImplemented
 
     @abc.abstractmethod
     def create_task(self, task: Task):
         raise NotImplemented
+
+    @property
+    def log(self) -> logging.Logger:
+        return logging.getLogger(self.__class__.__name__)
