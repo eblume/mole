@@ -33,7 +33,7 @@ class DummyRemote(Remote[DummyRemoteConfig]):
     def from_config(cls: Type[DummyRemote], config: DummyRemoteConfig) -> DummyRemote:
         return cls([], config)
 
-    def get_tasks(self) -> list[Task]:
+    def get_tasks(self, name: Optional[str] = None) -> list[Task]:
         return self._tasks
 
     def create_task(self, task: Task):

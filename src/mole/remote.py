@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Generic, Type, TYPE_CHECKING, TypeVar
+from typing import Generic, Optional, Type, TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     from .task import Task
@@ -33,7 +33,7 @@ class Remote(abc.ABC, Generic[RemoteConfigT]):
         raise NotImplemented
 
     @abc.abstractmethod
-    def get_tasks(self) -> list[Task]:
+    def get_tasks(self, name: Optional[str] = None) -> list[Task]:
         raise NotImplemented
 
     @abc.abstractmethod

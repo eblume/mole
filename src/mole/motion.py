@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Type
+import datetime as dt
+from typing import Optional, Type
 
 from requests_toolbelt.sessions import BaseUrlSession
 
@@ -14,11 +15,11 @@ class MotionRequestSession(BaseUrlSession):
     def __init__(self, base_url: str, key: str, workspace_id: str):
         super().__init__(base_url)
         self.headers.update({"X-Api-Key": key})
-        self._workspace_id = workspace_id
+        self.workspace_id = workspace_id
 
     def request(self, method, url, *args, **kwargs):
         kwargs.setdefault("params", {})
-        kwargs["params"].setdefault("workspaceId", self._workspace_id)
+        kwargs["params"].setdefault("workspaceId", self.workspace_id)
         kwargs["params"].setdefault("label", "mole")
         return super().request(method, url, *args, **kwargs)
 
@@ -39,22 +40,42 @@ class MotionRemote(Remote[MotionRemoteConfig]):
     def from_config(cls: Type[MotionRemote], config: MotionRemoteConfig) -> MotionRemote:
         return MotionRemote(config)
 
-    def get_tasks(self) -> list[Task]:
+    def get_tasks(self, name: Optional[str] = None) -> list[Task]:
         self.log.debug("Retrieving tasks")
-        response = self.session.get("tasks")
+
+        params = {}
+        if name is not None:
+            params["name"] = name
+
+        response = self.session.get("tasks", params=params)
         assert response.status_code == 200
+
         json_tasks = response.json()
-        assert len(json_tasks) > 0
         self.log.debug("Retrieved tasks: %s", json_tasks)
+
         tasks = []
         for json_task in json_tasks:
-            completed = "Completed" in {s["name"] for s in json_task["statuses"]}
-            name = json_task["name"]
-            tasks.append(Task(name=name, completed=completed))
+            completed = json_task.get("completed", False)
+            tasks.append(Task(name=json_task["name"], completed=completed))
         return tasks
 
     def create_task(self, task: Task):
         self.log.debug("Creating task: %s", task)
+        response = self.session.post(
+            "tasks",
+            json={
+                "durationMinutes": 0,
+                "autoScheduled": {
+                    "deadlineType": "NONE",
+                    "schedule": "Work Hours",
+                },
+                "name": "Whack-a-Mole",
+                "workspaceId": self.session.workspace_id,
+                "labels": ["mole"],
+            },
+        )
+        # TODO better error detection
+        assert 200 <= response.status_code < 400
 
     @property
     def session(self) -> MotionRequestSession:
