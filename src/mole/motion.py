@@ -19,7 +19,6 @@ class MotionRequestSession(BaseUrlSession):
     def request(self, method, url, *args, **kwargs):
         kwargs.setdefault("params", {})
         kwargs["params"].setdefault("workspaceId", self.workspace_id)
-        kwargs["params"].setdefault("label", "mole")
         return super().request(method, url, *args, **kwargs)
 
 
@@ -35,7 +34,7 @@ class MotionRemote(Remote[MotionRemoteConfig]):
     def get_tasks(self, name: Optional[str] = None) -> list[Task]:
         self.log.debug("Retrieving tasks")
 
-        params = {}
+        params = {"label": "mole"}
         if name is not None:
             params["name"] = name
 
@@ -55,13 +54,14 @@ class MotionRemote(Remote[MotionRemoteConfig]):
         self.log.debug("Creating task: %s", task)
         response = self.session.post(
             "tasks",
+            # TODO - actually pluck this data off the task
             json={
                 "duration": "REMINDER",
                 "autoScheduled": {
                     "deadlineType": "NONE",
                     "schedule": "Work Hours",
                 },
-                "name": "Whack-a-Mole",
+                "name": task.name,
                 "workspaceId": self.session.workspace_id,
                 "labels": ["mole"],
             },
