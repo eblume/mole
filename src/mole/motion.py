@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import datetime as dt
 from typing import Optional, Type
 
 from requests_toolbelt.sessions import BaseUrlSession
@@ -33,13 +32,6 @@ class MotionRemoteConfig(RemoteConfig):
 
 
 class MotionRemote(Remote[MotionRemoteConfig]):
-    def __init__(self, config: MotionRemoteConfig):
-        self.config = config
-
-    @classmethod
-    def from_config(cls: Type[MotionRemote], config: MotionRemoteConfig) -> MotionRemote:
-        return MotionRemote(config)
-
     def get_tasks(self, name: Optional[str] = None) -> list[Task]:
         self.log.debug("Retrieving tasks")
 
@@ -64,7 +56,7 @@ class MotionRemote(Remote[MotionRemoteConfig]):
         response = self.session.post(
             "tasks",
             json={
-                "durationMinutes": 0,
+                "duration": "REMINDER",
                 "autoScheduled": {
                     "deadlineType": "NONE",
                     "schedule": "Work Hours",

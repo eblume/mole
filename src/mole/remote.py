@@ -27,10 +27,14 @@ class Remote(abc.ABC, Generic[RemoteConfigT]):
     and other configuration.
     """
 
+    config: RemoteConfigT
+
+    def __init__(self, config: RemoteConfigT):
+        self.config = config
+
     @classmethod
-    @abc.abstractmethod
     def from_config(cls: Type[RemoteT], config: RemoteConfigT) -> RemoteT:
-        raise NotImplemented
+        return cls(config)
 
     @abc.abstractmethod
     def get_tasks(self, name: Optional[str] = None) -> list[Task]:
