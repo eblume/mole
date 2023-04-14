@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import logging
 from pathlib import Path
-import time
 
 import typer
 
-from mole.session import Session
-
-from .motion import MotionRemote, MotionRemoteConfig
+from .todoist import TodoistRemote
+from .models import Task
 
 app = typer.Typer()
 
@@ -20,25 +18,19 @@ logging.basicConfig(
 def whack(config: Path):
     assert config.is_file()
     key = config.read_text().strip()
-    assert len(key) == 44
+    assert len(key) == 40
 
-    remote = MotionRemote.from_config(MotionRemoteConfig(key))
-    session = Session(remote)
-    session.resolve_actions(session.determine_actions())
+    remote = TodoistRemote(key)
 
+    typer.secho("🐭 Whacking moles", fg=typer.colors.GREEN)
 
-@app.command()
-def watch(config: Path):
-    assert config.is_file()
-    key = config.read_text().strip()
-    assert len(key) == 44
+    mole_tasks = list(remote.get_tasks(completed=False))
+    if len(mole_tasks) == 0:
+        remote.create_task(Task("Work on mole"))
+    else:
+        typer.secho(f"🐭 Found {len(mole_tasks)} mole tasks", fg=typer.colors.YELLOW)  # TODO use inflect to pluralize
 
-    remote = MotionRemote.from_config(MotionRemoteConfig(key))
-    session = Session(remote)
-    while True:
-        logging.debug("Main Loop")
-        session.resolve_actions(session.determine_actions())
-        time.sleep(20)
+    typer.secho("🐭 Done whacking moles", fg=typer.colors.GREEN)
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
