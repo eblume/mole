@@ -23,12 +23,11 @@ class TodoistRemote:
         assert len(base_projects) == 1  # TODO handle this better. Maybe create the project if it doesn't exist?
         self.base_project_id = base_projects[0].id
 
-
     def get_tasks(self, completed: Optional[bool] = None) -> Iterable[Task]:
         for task in self.api.get_tasks(project_id=self.base_project_id):
             if completed is None or task.is_completed == completed:
-                yield Task(task.content, completed=task.is_completed)
+                yield Task(task.content, completed=task.is_completed, labels=task.labels)
 
     def create_task(self, task: Task):
-        typer.secho(f"🆕 Creating task: {task.name}", fg=typer.colors.GREEN)
-        self.api.add_task(task.name, project_id=self.base_project_id)  # TODO support other projects
+        typer.secho(f"🆕 Creating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
+        self.api.add_task(task.name, project_id=self.base_project_id, labels=task.labels)

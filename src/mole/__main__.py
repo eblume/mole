@@ -10,7 +10,7 @@ from .models import Task
 app = typer.Typer()
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
 
@@ -25,10 +25,21 @@ def whack(config: Path):
     typer.secho("🐭 Whacking moles", fg=typer.colors.GREEN)
 
     mole_tasks = list(remote.get_tasks(completed=False))
+    typer.secho(f"🐭 Found {len(mole_tasks)} mole tasks", fg=typer.colors.YELLOW)  # TODO use inflect to pluralize
+
+
+    # Catchall: there should be three primary tasks
+    primary_tasks = [t for t in mole_tasks if "primary" in t.labels]
+    typer.secho(f"🐭 Found {len(primary_tasks)} primary tasks", fg=typer.colors.YELLOW)
+    if len(primary_tasks) != 3:
+        task = Task("Pick three primary tasks", labels=["primary"])
+        mole_tasks.append(task)
+        remote.create_task(task)
+
+
+    # Final Catchall: If we've still got no tasks, make a basic "Work on Mole" task.
     if len(mole_tasks) == 0:
-        remote.create_task(Task("Work on mole"))
-    else:
-        typer.secho(f"🐭 Found {len(mole_tasks)} mole tasks", fg=typer.colors.YELLOW)  # TODO use inflect to pluralize
+        remote.create_task(Task("Work on mole", labels=["primary"]))
 
     typer.secho("🐭 Done whacking moles", fg=typer.colors.GREEN)
 
