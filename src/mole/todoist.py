@@ -1,8 +1,9 @@
 from __future__ import annotations
 import os
+from typing import Optional
+import datetime as dt
 
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
 import typer
 
 from todoist_api_python.api import TodoistAPI
@@ -25,11 +26,32 @@ class TodoistRemote:
         assert len(base_projects) == 1  # TODO handle this better. Maybe create the project if it doesn't exist?
         self.base_project_id = base_projects[0].id
 
-    def get_tasks(self, completed: Optional[bool] = None) -> Iterable[Task]:
-        for task in self.api.get_tasks(project_id=self.base_project_id):
-            if completed is None or task.is_completed == completed:
-                yield Task(task.content, completed=task.is_completed, labels=task.labels)
+    def get_tasks(self, name: Optional[str] = None, filter: Optional[str] = None, label: Optional[str] = None) -> list[Task]:
+        todoist_tasks = self.api.get_tasks(project_id=self.base_project_id, label=label, filter=filter)
+
+        def _filt(task):
+            if name is None:
+                return True
+            return task.content == name
+
+        return [
+            Task(todoist_task.content, labels=todoist_task.labels)
+            for todoist_task in todoist_tasks
+            if _filt(todoist_task)
+        ]
 
     def create_task(self, task: Task):
         typer.secho(f"🆕 Creating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        self.api.add_task(task.name, project_id=self.base_project_id, labels=task.labels)
+        
+        # Default due_date to today, we may want to change this later
+        due_date = dt.date.today().strftime("%Y-%m-%d")
+
+        self.api.add_task(task.name, project_id=self.base_project_id, labels=task.labels, due_date=due_date)
+
+    def delete_task(self, task: Task):
+        typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
+        todoist_tasks = self.api.get_tasks(project_id=self.base_project_id)
+        todoist_tasks = [t for t in todoist_tasks if t.content == task.name]
+        assert len(todoist_tasks) > 0
+        todoist_task = todoist_tasks[0]  # Pick the first. TODO: handle multiple tasks with the same name more gracefully.
+        self.api.delete_task(todoist_task.id)
