@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from dataclasses import dataclass, field
 from typing import Iterable, Optional
@@ -11,14 +12,15 @@ from .models import Task
 
 @dataclass
 class TodoistRemote:
-    api_key: str
     base_project_name: str = "Hermes"  # TODO this probably isnt how I want to specify this
 
     api: TodoistAPI = field(init=False)
     base_project_id: str = field(init=False)
 
     def __post_init__(self):
-        self.api = TodoistAPI(self.api_key)
+        api_key = os.environ.get("TODOIST_API_KEY")
+        assert api_key and len(api_key) == 40
+        self.api = TodoistAPI(api_key)
         base_projects = [p for p in self.api.get_projects() if p.name == self.base_project_name]
         assert len(base_projects) == 1  # TODO handle this better. Maybe create the project if it doesn't exist?
         self.base_project_id = base_projects[0].id
