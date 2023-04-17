@@ -6,6 +6,7 @@ import typer
 from .todoist import TodoistRemote
 from .models import Task
 from .email import get_email_count
+from .jira import get_my_issues
 
 app = typer.Typer()
 
@@ -25,7 +26,6 @@ def whack():
     remote = TodoistRemote()
 
     ## Module: Check Email
-    # Filter: is there a task called "Check Email"?
     email_task_name = "Check Email"
     search_filter = "(today | overdue)"
     check_email_tasks = list(remote.get_tasks(name=email_task_name, filter=search_filter))
@@ -48,6 +48,22 @@ def whack():
         else:
             for task in check_email_tasks:
                 remote.delete_task(task)
+
+    ## Module: Jira
+    issues = get_my_issues()
+    jira_tasks = {t.name: t for t in remote.get_tasks(filter="(today | overdue)", label="jira")}
+    extra_tasks = set(jira_tasks.keys()) - set(issues.keys())
+    new_issues = set(issues.keys()) - set(jira_tasks.keys())
+
+    # First, close extra tasks
+    for task_name in extra_tasks:
+        remote.delete_task(jira_tasks[task_name])
+
+    # Second, create missing tasks
+    for key in new_issues:
+        # TODO add description, link, etc.
+        remote.create_task(Task(key, labels=["jira"]))
+    
 
     typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
 
