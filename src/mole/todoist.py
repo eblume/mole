@@ -11,6 +11,10 @@ from todoist_api_python.api import TodoistAPI
 from .models import Task
 
 
+class TodoistException(Exception):
+    pass
+
+
 @dataclass
 class TodoistRemote:
     base_project_name: str = "Hermes"  # TODO this probably isnt how I want to specify this
@@ -20,7 +24,9 @@ class TodoistRemote:
 
     def __post_init__(self):
         api_key = os.environ.get("TODOIST_API_KEY")
-        assert api_key and len(api_key) == 40
+        if api_key is None or len(api_key) != 40:
+            raise TodoistException("TODOIST_API_KEY must be set to a valid API key")
+
         self.api = TodoistAPI(api_key)
         base_projects = [p for p in self.api.get_projects() if p.name == self.base_project_name]
         assert len(base_projects) == 1  # TODO handle this better. Maybe create the project if it doesn't exist?

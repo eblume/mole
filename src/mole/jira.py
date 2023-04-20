@@ -9,10 +9,14 @@ API_KEY = os.getenv('JIRA_APPLICATION_KEY')
 URL = os.getenv('JIRA_SERVER_URL')
 
 
-def get_my_issues() -> dict[str, str]:
-    assert URL
-    assert API_KEY
+class JiraException(Exception):
+    pass
 
+
+def get_my_issues() -> dict[str, str]:
+    if not URL or not API_KEY:
+        raise JiraException("JIRA_APPLICATION_KEY and JIRA_SERVER_URL must be set")
+        
     jira = JIRA(server=URL, token_auth=API_KEY) 
     issues = jira.search_issues('assignee = currentUser()')
 

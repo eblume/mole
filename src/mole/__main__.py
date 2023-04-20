@@ -3,10 +3,9 @@ import logging
 
 import typer
 
-from .todoist import TodoistRemote
-from .models import Task
+from .todoist import TodoistRemote, TodoistException
 from .email import check_email
-from .jira import check_jira
+from .jira import check_jira, JiraException
 
 app = typer.Typer()
 
@@ -17,9 +16,19 @@ logging.basicConfig(
 
 @app.command()
 def whack():
-    remote = TodoistRemote()
+    try:
+        remote = TodoistRemote()
+    except TodoistException as e:
+        typer.secho(f"🐭 Error: {e}", fg=typer.colors.RED)
+        return
+
     check_email(remote)
-    check_jira(remote)
+
+    try:
+        check_jira(remote)
+    except JiraException as e:
+        typer.secho(f"🤷 Skipping Jira: {e}", fg=typer.colors.YELLOW)
+
     typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
 
 
