@@ -38,5 +38,5 @@ def check_jira(remote: TodoistRemote) -> None:
     # Second, create missing tasks
     for key in new_issues:
         # TODO add description, link, etc.
-        remote.create_task(Task(key, labels=["jira"]))
+        remote.create_task(Task(key, labels=["jira"]), project_name="Work")
 
