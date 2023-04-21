@@ -23,6 +23,7 @@ end try
 """
 
 # A mapping of email account names in Mail.app to the name of the inbox to check.
+# TODO make this a config or something, "checked inboxes" or some such, and search for inbox names
 EMAIL_ACCOUNTS = {
     "Google": "INBOX",
     "Exchange": "Inbox"
@@ -66,6 +67,8 @@ def check_email(remote: TodoistRemote) -> None:
         if len(existing_tasks) == 0:
             if email_count > 0:
                 remote.create_task(Task(task_name))
+            else:
+                typer.secho(f"📬 Nothing to do for [{account}/{inbox}]", fg=typer.colors.GREEN)
         else:
             if email_count > 0:
                 typer.secho(f"📬 Found an existing '{task_name}' task", fg=typer.colors.BLUE)
