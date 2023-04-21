@@ -37,8 +37,13 @@ class TodoistRemote:
         for project in all_projects:
             self.project_map[project.name] = project.id
 
-    def get_tasks(self, name: Optional[str] = None, filter: Optional[str] = None, label: Optional[str] = None) -> list[Task]:
-        todoist_tasks = self.api.get_tasks(project_id=self.default_project_id, label=label, filter=filter)
+    def get_tasks(self, name: Optional[str] = None, project_name: Optional[str] = None, filter: Optional[str] = None, label: Optional[str] = None) -> list[Task]:
+        """Retrieve the specified tasks, filtering remotely or locally.
+
+        If project_name is specified, uses that project name to look up tasks. If not, no project filtering is done.
+        """
+        project_id = self.project_map[project_name] if project_name is not None else None
+        todoist_tasks = self.api.get_tasks(project_id=project_id, label=label, filter=filter)
 
         def _filt(task):
             if name is None:
@@ -68,7 +73,7 @@ class TodoistRemote:
         # Default due_date to today, we may want to change this later
         due_date = dt.date.today().strftime("%Y-%m-%d")
 
-        self.api.add_task(task.name, project_id=project_id, labels=task.labels, due_date=due_date)
+        self.api.add_task(task.name, project_id=project_id, labels=task.labels, due_date=due_date, description=task.description)
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)

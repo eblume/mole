@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 class Task:
     name: str
     completed: bool = False
+    description: Optional[str] = None
     labels: list[str] = field(default_factory=list)
     project_id: Optional[str] = None
 
