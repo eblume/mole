@@ -51,13 +51,24 @@ class TodoistRemote:
             if _filt(todoist_task)
         ]
 
-    def create_task(self, task: Task):
+    def create_task(self, task: Task, project_name: Optional[str] = None):
+        """Create a task in the default project, or in the project specified by project_name.
+
+        The order of preference for project is:
+          1. project_name in kwargs (which is resolved to a project id by this function)
+          2. task.project_id
+          3. self.default_project_id
+        """
         typer.secho(f"🆕 Creating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
+        if project_name is not None:
+            project_id = self.project_map[project_name]
+        else:
+            project_id = task.project_id or self.default_project_id
         
         # Default due_date to today, we may want to change this later
         due_date = dt.date.today().strftime("%Y-%m-%d")
 
-        self.api.add_task(task.name, project_id=self.default_project_id, labels=task.labels, due_date=due_date)
+        self.api.add_task(task.name, project_id=project_id, labels=task.labels, due_date=due_date)
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
