@@ -17,10 +17,11 @@ class TodoistException(Exception):
 
 @dataclass
 class TodoistRemote:
-    base_project_name: str = "Hermes"  # TODO this probably isnt how I want to specify this
+    default_project_name: str = "Hermes"  # TODO this probably isnt how I want to specify this
 
     api: TodoistAPI = field(init=False)
-    base_project_id: str = field(init=False)
+    default_project_id: str = field(init=False)
+    project_map: dict[str, str] = field(init=False)
 
     def __post_init__(self):
         api_key = os.environ.get("TODOIST_API_KEY")
@@ -28,12 +29,16 @@ class TodoistRemote:
             raise TodoistException("TODOIST_API_KEY must be set to a valid API key")
 
         self.api = TodoistAPI(api_key)
-        base_projects = [p for p in self.api.get_projects() if p.name == self.base_project_name]
-        assert len(base_projects) == 1  # TODO handle this better. Maybe create the project if it doesn't exist?
-        self.base_project_id = base_projects[0].id
+        all_projects = self.api.get_projects()
+        default_projects = [p for p in all_projects if p.name == self.default_project_name]
+        assert len(default_projects) == 1  # TODO handle this better. Maybe create the project if it doesn't exist?
+        self.default_project_id = default_projects[0].id
+        self.project_map = {}
+        for project in all_projects:
+            self.project_map[project.name] = project.id
 
     def get_tasks(self, name: Optional[str] = None, filter: Optional[str] = None, label: Optional[str] = None) -> list[Task]:
-        todoist_tasks = self.api.get_tasks(project_id=self.base_project_id, label=label, filter=filter)
+        todoist_tasks = self.api.get_tasks(project_id=self.default_project_id, label=label, filter=filter)
 
         def _filt(task):
             if name is None:
@@ -52,11 +57,11 @@ class TodoistRemote:
         # Default due_date to today, we may want to change this later
         due_date = dt.date.today().strftime("%Y-%m-%d")
 
-        self.api.add_task(task.name, project_id=self.base_project_id, labels=task.labels, due_date=due_date)
+        self.api.add_task(task.name, project_id=self.default_project_id, labels=task.labels, due_date=due_date)
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        todoist_tasks = self.api.get_tasks(project_id=self.base_project_id)
+        todoist_tasks = self.api.get_tasks(project_id=self.default_project_id)
         todoist_tasks = [t for t in todoist_tasks if t.content == task.name]
         assert len(todoist_tasks) > 0
         todoist_task = todoist_tasks[0]  # Pick the first. TODO: handle multiple tasks with the same name more gracefully.
