@@ -66,7 +66,7 @@ def check_jira(remote: TodoistRemote) -> None:
     for name in new_tasks:
         task = name_to_jira_task[name]
         ticket_url = f"{URL}/browse/{task}"
-        remote.create_task(Task(name, labels=["jira"], description=ticket_url), project_name="Work")
+        remote.create_task(Task(name, labels={"jira"}, description=ticket_url), project_name="Work")
 
 
 def make_name(ticket: str, summary: str) -> str:

@@ -60,7 +60,8 @@ class TodoistRemote:
         return [
             Task(
                 name=todoist_task.content,
-                labels=todoist_task.labels,
+                id=todoist_task.id,
+                labels=set(todoist_task.labels),
                 due=todoist_task.due,
                 project_id=todoist_task.project_id,
                 description=todoist_task.description
@@ -90,8 +91,22 @@ class TodoistRemote:
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        todoist_tasks = self.api.get_tasks()
+        
+        # If we have the task id already, this is easy
+        if task.id is not None:
+            self.api.delete_task(task.id)
+            return
+
+        # The hard eay:
+        todoist_tasks = self.api.get_tasks()  # TODO this does not scale
         todoist_tasks = [t for t in todoist_tasks if t.content == task.name]
         assert len(todoist_tasks) > 0
         todoist_task = todoist_tasks[0]  # Pick the first. TODO: handle multiple tasks with the same name more gracefully.
         self.api.delete_task(todoist_task.id)
+
+    def update_task(self, task: Task):
+        if task.id is None:
+            raise TodoistException("Cannot update task without an id")
+
+        typer.secho(f"🔄 Updating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
+        self.api.update_task(task.id, content=task.name, due=task.due, labels=task.labels, description=task.description)

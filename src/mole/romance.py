@@ -9,7 +9,7 @@ def check_special_plan(remote: TodoistRemote) -> None:
     label = "special_plan"
     special_plan_tickets = remote.get_tasks(label=label)
     if not special_plan_tickets:
-        remote.create_task(Task("Make a special plan", labels=[label]), project_name="Allison")
+        remote.create_task(Task("Make a special plan", labels={label}), project_name="Allison")
         typer.secho("❤️ Added a special plan", fg=typer.colors.BLUE)
     else:
         typer.secho("❤️ Special plan already exists", fg=typer.colors.GREEN)

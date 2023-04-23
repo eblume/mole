@@ -10,9 +10,10 @@ from typing import Optional
 @dataclass
 class Task:
     name: str
+    id: Optional[str] = None
     completed: bool = False
     description: Optional[str] = None
-    labels: list[str] = field(default_factory=list)
+    labels: set[str] = field(default_factory=set)
     project_id: Optional[str] = None
     due: Optional[Due] = None
 
