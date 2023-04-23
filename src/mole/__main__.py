@@ -7,6 +7,7 @@ from .todoist import TodoistRemote, TodoistException
 from .email import check_email
 from .jira import check_jira, JiraException
 from .romance import check_special_plan
+from .meta import no_due_date_on_priority_item
 
 app = typer.Typer()
 
@@ -31,6 +32,8 @@ def whack():
         typer.secho(f"🤷 Skipping Jira: {e}", fg=typer.colors.YELLOW)
 
     check_special_plan(remote)
+
+    no_due_date_on_priority_item(remote)
 
     typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
 

@@ -58,7 +58,13 @@ class TodoistRemote:
             return task.content == name
 
         return [
-            Task(todoist_task.content, labels=todoist_task.labels)
+            Task(
+                name=todoist_task.content,
+                labels=todoist_task.labels,
+                due=todoist_task.due,
+                project_id=todoist_task.project_id,
+                description=todoist_task.description
+            )
             for todoist_task in todoist_tasks
             if _filt(todoist_task)
         ]
@@ -84,7 +90,7 @@ class TodoistRemote:
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        todoist_tasks = self.api.get_tasks(project_id=self.default_project_id)
+        todoist_tasks = self.api.get_tasks()
         todoist_tasks = [t for t in todoist_tasks if t.content == task.name]
         assert len(todoist_tasks) > 0
         todoist_task = todoist_tasks[0]  # Pick the first. TODO: handle multiple tasks with the same name more gracefully.

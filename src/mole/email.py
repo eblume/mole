@@ -42,7 +42,7 @@ def get_email_count(account: str, inbox: str) -> int:
     script = GET_EMAIL_COUNT_APPLESCRIPT.format(account=account, inbox=inbox)
     output = run_applescript(script).strip()
     count = int(output)
-    typer.secho(f"📬 [{account}/{inbox}] {count}", fg=typer.colors.GREEN if count == 0 else typer.colors.BLUE)
+    typer.secho(f"📬 [{account}/{inbox}] {count}", fg=typer.colors.GREEN if count == 0 else typer.colors.YELLOW)
     return count
 
 
