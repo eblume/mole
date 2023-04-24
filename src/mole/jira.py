@@ -41,7 +41,7 @@ def check_jira(remote: TodoistRemote) -> None:
 
     jira_tasks = get_my_issues()
     todoist_tasks = {
-        task.name: task for task in remote.get_tasks(filter="(today | overdue)", label="jira")
+        task.name: task for task in remote.get_tasks(filter="(today | overdue) & @jira")
     }
 
     name_to_jira_task = {make_name(key, summary): key for key, summary in jira_tasks.items()}

@@ -70,7 +70,7 @@ def inbox_cleanup(remote: TodoistRemote) -> None:
         if len(inbox_cleanup_tasks) == 0:
             remote.create_task(Task(name=inbox_cleanup_task_name), project_name="Meta")
         else:
-            typer.secho(f"✅ {inbox_cleanup_task_name}", fg=typer.colors.GREEN)
+            typer.secho(f"✅ '{inbox_cleanup_task_name}' task found", fg=typer.colors.GREEN)
     else:
         if len(inbox_cleanup_tasks) > 0:
             remote.delete_task(inbox_cleanup_tasks[0])

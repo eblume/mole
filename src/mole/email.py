@@ -71,7 +71,7 @@ def check_email(remote: TodoistRemote) -> None:
                 typer.secho(f"📬 Nothing to do for [{account}/{inbox}]", fg=typer.colors.GREEN)
         else:
             if email_count > 0:
-                typer.secho(f"📬 Found an existing '{task_name}' task", fg=typer.colors.BLUE)
+                typer.secho(f"📬 Found an existing '{task_name}' task", fg=typer.colors.YELLOW)
             else:
                 for task in existing_tasks:
                     remote.delete_task(task)
