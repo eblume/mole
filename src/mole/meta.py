@@ -2,7 +2,7 @@
 
 import typer
 
-from .todoist import TodoistRemote
+from .todoist import TodoistRemote, TodoistException
 from .models import Task
 
 
@@ -53,3 +53,24 @@ def on_deck_grooming(remote: TodoistRemote) -> None:
     else:
         if len(check_tasks) > 0:
             remote.delete_task(check_tasks[0])
+
+
+def inbox_cleanup(remote: TodoistRemote) -> None:
+    """Keep the inbox clear - all tasks should be assigned to a project."""
+    inbox_tasks = remote.get_tasks(project_name="Inbox", filter="no date")
+    inbox_cleanup_task_name = "Inbox Cleanup"
+    inbox_cleanup_tasks = remote.get_tasks(name=inbox_cleanup_task_name)
+
+    # Clean up extras
+    for task in inbox_tasks[1:]:
+        remote.delete_task(task)
+        typer.secho(f"🗑️  Deleted extra {task.name}", fg=typer.colors.YELLOW)
+
+    if len(inbox_tasks) > 0:
+        if len(inbox_cleanup_tasks) == 0:
+            remote.create_task(Task(name=inbox_cleanup_task_name), project_name="Meta")
+        else:
+            typer.secho(f"✅ {inbox_cleanup_task_name}", fg=typer.colors.GREEN)
+    else:
+        if len(inbox_cleanup_tasks) > 0:
+            remote.delete_task(inbox_cleanup_tasks[0])

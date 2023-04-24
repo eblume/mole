@@ -87,7 +87,7 @@ class TodoistRemote:
         # Default due_date to today, we may want to change this later
         due_date = dt.date.today().strftime("%Y-%m-%d")
 
-        self.api.add_task(task.name, project_id=project_id, labels=task.labels, due_date=due_date, description=task.description)
+        self.api.add_task(task.name, project_id=project_id, labels=list(task.labels), due_date=due_date, description=task.description)
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑 Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
