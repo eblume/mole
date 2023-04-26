@@ -109,4 +109,4 @@ class TodoistRemote:
             raise TodoistException("Cannot update task without an id")
 
         typer.secho(f"🔄 Updating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        self.api.update_task(task.id, content=task.name, due=task.due, labels=task.labels, description=task.description)
+        self.api.update_task(task.id, content=task.name, due=task.due, labels=list(task.labels), description=task.description)
