@@ -22,7 +22,7 @@ def journal_entry(when: dt.datetime) -> Path:
     return journal_dir() / f'{when:%Y-%m-%d_%HH-%MM}.md'
 
 
-def journal(entry: str, when: Optional[dt.datetime]) -> None:
+def write_journal(entry: str, when: Optional[dt.datetime] = None) -> Path:
     """Write entry to the journal file.
 
     Assume today's journal entry if when is None.
@@ -35,10 +35,9 @@ def journal(entry: str, when: Optional[dt.datetime]) -> None:
         raise typer.Exit(code=1)
 
     typer.secho(f'📓 Writing journal entry to {journal_file}', fg=typer.colors.BLUE)
-    with open(journal_file, 'w') as f:
-        f.write(f'# {when:%A, %B %d, %Y}\n\n')
-        f.write(entry)
-        f.write('\n')
+    journal_file.write_text(entry)
+
+    return journal_file
 
 
 def ensure_journal(remote: TodoistRemote):
