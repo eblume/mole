@@ -8,6 +8,7 @@ from .email import check_email
 from .jira import check_jira, JiraException
 from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, on_deck_grooming, inbox_cleanup
+from .journal import ensure_journal
 
 app = typer.Typer()
 
@@ -36,6 +37,7 @@ def whack():
     no_due_date_on_priority_item(remote)
     on_deck_grooming(remote)
     inbox_cleanup(remote)
+    ensure_journal(remote)
 
     typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
 

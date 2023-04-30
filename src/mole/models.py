@@ -15,6 +15,12 @@ class Task:
     description: Optional[str] = None
     labels: set[str] = field(default_factory=set)
     project_id: Optional[str] = None
+    # TODO there is a 'due problem', related to a 'project problem', and the root of it is that this model is trying to
+    # pull double duty as a container for todoist task creation API as well as a representation of the state of tasks
+    # inside and outside of Todoist. There needs to be a rethinking of the model layer and the API layer and how data
+    # gets shuttled between them. At this moment I am thinking that the todoist.py API layer should NOT use models and
+    # instead should build them. Anyway the upshot is that if you are creating a new Task, this 'due' field is entirely
+    # ignored.
     due: Optional[Due] = None
 
 

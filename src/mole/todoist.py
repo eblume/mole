@@ -85,6 +85,7 @@ class TodoistRemote:
             project_id = task.project_id or self.default_project_id
         
         # Default due_date to today, we may want to change this later
+        # TODO see note in models.py about 'due problem'
         due_date = dt.date.today().strftime("%Y-%m-%d")
 
         self.api.add_task(task.name, project_id=project_id, labels=list(task.labels), due_date=due_date, description=task.description)
