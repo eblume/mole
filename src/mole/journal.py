@@ -55,7 +55,6 @@ def ensure_journal(remote: TodoistRemote):
 
     if existing_entry.exists():
         if existing_tasks:
-            typer.secho('📓 Marking journal entry task as done', fg=typer.colors.BLUE)
             # TODO complete, not delete
             remote.delete_task(existing_tasks[0])
         else:
@@ -64,5 +63,4 @@ def ensure_journal(remote: TodoistRemote):
         if existing_tasks:
             typer.secho('📓 Journal entry task exists', fg=typer.colors.GREEN)
         else:
-            typer.secho('📓 Creating journal entry task', fg=typer.colors.BLUE)
             remote.create_task(Task(task_name), project_name="Life")

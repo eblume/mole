@@ -62,7 +62,7 @@ def inbox_cleanup(remote: TodoistRemote) -> None:
     inbox_cleanup_tasks = remote.get_tasks(name=inbox_cleanup_task_name)
 
     # Clean up extras
-    for task in inbox_tasks[1:]:
+    for task in inbox_cleanup_tasks[1:]:
         remote.delete_task(task)
         typer.secho(f"🗑️  Deleted extra {task.name}", fg=typer.colors.YELLOW)
 
