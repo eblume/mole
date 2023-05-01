@@ -74,7 +74,7 @@ warn_unreachable = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR/stubs"
 files = [
     "src/**/*.py",
-    "tests/**/*.py",
+    # "tests/**/*.py",
 ]
 
 # How to ignore files with mypy

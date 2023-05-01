@@ -2,6 +2,7 @@
 from typing import Optional
 import datetime as dt
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import typer
 
@@ -17,27 +18,38 @@ def journal_dir() -> Path:
     return journal_dir
 
 
-def journal_entry(when: dt.datetime) -> Path:
+def journal_entry(when: dt.date) -> Path:
     """Return the filename for the journal entry"""
-    return journal_dir() / f'{when:%Y-%m-%d_%HH-%MM}.md'
+    return journal_dir() / f'{when:%Y-%m-%d}.md'
 
 
-def write_journal(entry: str, when: Optional[dt.datetime] = None) -> Path:
+def write_journal(entry: str, when: Optional[dt.date] = None) -> Path:
     """Write entry to the journal file.
 
     Assume today's journal entry if when is None.
     """
-    when = when or dt.datetime.now()
+    when = when or dt.datetime.now(ZoneInfo('local')).date()
+    journal_file = journal_entry(when)
+    typer.secho(f'📓 Writing journal entry to {journal_file}', fg=typer.colors.BLUE)
+    journal_file.write_text(entry)
+    return journal_file
+
+
+def read_journal(when: Optional[dt.date] = None) -> str:
+    """Read the journal entry for the given date.
+
+    Assume today's journal entry if when is None. If the entry does not exist, a new one is generated from a template,
+    although the underlying file will not be created until write_journal is called.
+    """
+    when = when or dt.datetime.now(ZoneInfo('local')).date()
 
     journal_file = journal_entry(when)
     if journal_file.exists():
-        typer.secho('📓 Journal entry already exists', fg=typer.colors.RED)
-        raise typer.Exit(code=1)
+        typer.secho(f'📓 Reading journal entry from {journal_file}', fg=typer.colors.BLUE)
+        return journal_file.read_text()
 
-    typer.secho(f'📓 Writing journal entry to {journal_file}', fg=typer.colors.BLUE)
-    journal_file.write_text(entry)
-
-    return journal_file
+    typer.secho(f'📓 Journal entry does not exist, generating from template', fg=typer.colors.BLUE)
+    return f'# {when:%A, %B %d, %Y}\n\n'
 
 
 def ensure_journal(remote: TodoistRemote):

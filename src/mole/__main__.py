@@ -9,7 +9,7 @@ from .email import check_email
 from .jira import check_jira, JiraException
 from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, on_deck_grooming, inbox_cleanup
-from .journal import ensure_journal, write_journal
+from .journal import ensure_journal, write_journal, read_journal
 
 app = typer.Typer()
 
@@ -48,14 +48,14 @@ def journal():
     """Write a journal entry using $EDITOR"""
     # Run $EDITOR and return the result
     # TODO this isn't quite right. Instead of a new file every time, it should open the same day's file each time.
-    now = dt.datetime.now()
-    content = f"# {now.strftime('%Y-%m-%d %H:%M')}\n\n"
-    entry = typer.edit(content)
-    if not entry:
-        typer.secho("📓 No journal entry, exiting", fg=typer.colors.YELLOW)
+    today = dt.datetime.now().date()
+    entry = typer.edit(read_journal(today))
+
+    if entry is None:
+        typer.secho('📓 No journal entry written', fg=typer.colors.YELLOW)
         return
-    path = write_journal(entry, now)
-    typer.secho(f"📓 Wrote journal entry to {path}", fg=typer.colors.GREEN)
+
+    write_journal(entry, today)
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
