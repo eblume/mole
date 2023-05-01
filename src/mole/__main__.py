@@ -49,7 +49,7 @@ def journal():
     # Run $EDITOR and return the result
     # TODO this isn't quite right. Instead of a new file every time, it should open the same day's file each time.
     today = dt.datetime.now().date()
-    entry = typer.edit(read_journal(today))
+    entry = typer.edit(read_journal(today), extension='.md', require_save=True)
 
     if entry is None:
         typer.secho('📓 No journal entry written', fg=typer.colors.YELLOW)
