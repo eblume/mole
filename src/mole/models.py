@@ -22,6 +22,7 @@ class Task:
     # instead should build them. Anyway the upshot is that if you are creating a new Task, this 'due' field is entirely
     # ignored.
     due: Optional[Due] = None
+    priority: int = 4
 
 
 @dataclass

@@ -88,7 +88,7 @@ class TodoistRemote:
         # TODO see note in models.py about 'due problem'
         due_date = dt.date.today().strftime("%Y-%m-%d")
 
-        self.api.add_task(task.name, project_id=project_id, labels=list(task.labels), due_date=due_date, description=task.description)
+        self.api.add_task(task.name, project_id=project_id, labels=list(task.labels), due_date=due_date, description=task.description, priority=task.priority)
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑  Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
@@ -110,4 +110,4 @@ class TodoistRemote:
             raise TodoistException("Cannot update task without an id")
 
         typer.secho(f"🔄 Updating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        self.api.update_task(task.id, content=task.name, due=task.due, labels=list(task.labels), description=task.description)
+        self.api.update_task(task.id, content=task.name, due=task.due, labels=list(task.labels), description=task.description, priority=task.priority)

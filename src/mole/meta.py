@@ -7,7 +7,7 @@ from .models import Task
 
 
 # TODO obviously this cant really be a constant, so some more elastic system is needed
-TARGET_MAX_DECK_SIZE = 50
+TARGET_MAX_DECK_SIZE = 150
 
 
 def no_due_date_on_priority_item(remote: TodoistRemote) -> None:
@@ -29,31 +29,11 @@ def no_due_date_on_priority_item(remote: TodoistRemote) -> None:
 def on_deck_grooming(remote: TodoistRemote) -> None:
     """Scans the "On Deck" (p3) and creates various meta tasks to keep it groomed.
 
-    If any of the following are true, a "review_on_deck" label is applied and a task is created to review that label:
-
-    - p3 tasks with no due date
-    - p3 tasks that have been due for more than 3 months
-
     If any of the following are true, a corresponding ticket is made, and deleted if not:
 
     - # of p3 tasks > TARGET_MAX_DECK_SIZE
     """
-    # review_on_deck
-    check_task_name = "Review On Deck: Check 'review_on_deck' label"
-    check_tasks = remote.get_tasks(name=check_task_name)
-    filter = "p3 & (no date | due before: -3 months)"
-    tasks = remote.get_tasks(filter=filter)
-    if len(tasks) > 0:
-        for task in tasks:
-            if "review_on_deck" not in task.labels:
-                task.labels.add("review_on_deck")
-                remote.update_task(task)
-
-        if len(check_tasks) == 0:
-            remote.create_task(Task(name=check_task_name), project_name="Meta")
-    else:
-        if len(check_tasks) > 0:
-            remote.delete_task(check_tasks[0])
+   # This used to also handle the "review_on_deck" label until I realized that can just be its own filter
 
     # on_deck_grooming
     on_deck_grooming_task_name = "On Deck Grooming: Too many tasks"
