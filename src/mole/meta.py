@@ -2,7 +2,7 @@
 
 import typer
 
-from .todoist import TodoistRemote, TodoistException
+from .todoist import TodoistRemote
 from .models import Task
 
 
@@ -38,6 +38,7 @@ def on_deck_grooming(remote: TodoistRemote) -> None:
 
     - # of p3 tasks > TARGET_MAX_DECK_SIZE
     """
+    # review_on_deck
     check_task_name = "Review On Deck: Check 'review_on_deck' label"
     check_tasks = remote.get_tasks(name=check_task_name)
     filter = "p3 & (no date | due before: -3 months)"
@@ -53,6 +54,20 @@ def on_deck_grooming(remote: TodoistRemote) -> None:
     else:
         if len(check_tasks) > 0:
             remote.delete_task(check_tasks[0])
+
+    # on_deck_grooming
+    on_deck_grooming_task_name = "On Deck Grooming: Too many tasks"
+    on_deck_grooming_tasks = remote.get_tasks(name=on_deck_grooming_task_name)
+    filter = "p3"
+    tasks = remote.get_tasks(filter=filter)
+    if len(tasks) > TARGET_MAX_DECK_SIZE:
+        if len(on_deck_grooming_tasks) == 0:
+            remote.create_task(Task(name=on_deck_grooming_task_name), project_name="Meta")
+        else:
+            typer.secho(f"✅ '{on_deck_grooming_task_name}' task found", fg=typer.colors.GREEN)
+    else:
+        if len(on_deck_grooming_tasks) > 0:
+            remote.delete_task(on_deck_grooming_tasks[0])
 
 
 def inbox_cleanup(remote: TodoistRemote) -> None:
