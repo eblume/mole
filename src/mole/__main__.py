@@ -58,6 +58,22 @@ def journal():
     write_journal(entry, today)
 
 
+@app.command()
+def game():
+    """Tell OpenAI to play a game. Requires OPENAI_API_KEY to be set.
+
+    STATUS: Not yet working. Basic pattern is mostly there, but need to switch from Completion api to Chat.Completion
+    API, not sure why.
+    """
+    import os, openai
+    from .game import Game, Player
+
+    openai.api_key = os.getenv('OPENAI_API_KEY')
+
+    game = Game(Player())
+    game.run()
+
+
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
 def main():
     app()
