@@ -74,6 +74,16 @@ def game():
     game.run()
 
 
+@app.command()
+def summary(temperature: float = 0.3, extra_prompt: str = ""):
+    """Get an LLM summary of the day"""
+    import openai, os
+    openai.api_key = os.getenv('OPENAI_API_KEY')
+
+    from .summary import get_summary
+    typer.echo(get_summary(temperature=temperature, extra_prompt=extra_prompt))
+
+
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
 def main():
     app()

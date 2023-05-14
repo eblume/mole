@@ -22,6 +22,7 @@ class TodoistRemote:
     api: TodoistAPI = field(init=False)
     default_project_id: str = field(init=False)
     project_map: dict[str, str] = field(init=False)
+    project_id_map: dict[str, str] = field(init=False)
 
     def __post_init__(self):
         api_key = os.environ.get("TODOIST_API_KEY")
@@ -36,6 +37,7 @@ class TodoistRemote:
         self.project_map = {}
         for project in all_projects:
             self.project_map[project.name] = project.id
+        self.project_id_map = {v: k for k, v in self.project_map.items()}
 
 
     def get_tasks(self, name: Optional[str] = None, project_name: Optional[str]=None, filter: Optional[str] = None, label: Optional[str] = None) -> list[Task]:
@@ -64,7 +66,8 @@ class TodoistRemote:
                 labels=set(todoist_task.labels),
                 due=todoist_task.due,
                 project_id=todoist_task.project_id,
-                description=todoist_task.description
+                description=todoist_task.description,
+                priority=todoist_task.priority
             )
             for todoist_task in todoist_tasks
             if _filt(todoist_task)
