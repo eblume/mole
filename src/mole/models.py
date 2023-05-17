@@ -31,8 +31,9 @@ class CompletedTask:
     task_id: int
     user_id: int
     project_id: int
+    section_id: int
     content: str
-    completed_date: str
+    completed_at: str
     note_count: int
     meta_data: str
 

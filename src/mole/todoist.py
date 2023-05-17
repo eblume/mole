@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Optional
+from typing import Optional, Any
 import datetime as dt
 import requests
 
@@ -124,8 +124,9 @@ class TodoistRemote:
         """Get completed tasks from the todoist API."""
         # Uses v9 sync API, because the rest API doesnt support completed tasks
         # TODO this entire module aught to move to sync API, no?
+        # TODO offset / limit for pagination
         headers = { 'Authorization: Bearer': os.environ.get("TODOIST_API_KEY") }
-        params = {}
+        params = { 'annotate_notes': False }  # type: dict[str, Any]
         if project_id:
             params['project_id'] = project_id
         if limit:
@@ -140,6 +141,7 @@ class TodoistRemote:
             headers=headers,  # type: ignore
             params=params
         )
+        
         assert response.status_code == 200
         data = response.json()
         tasks = []
