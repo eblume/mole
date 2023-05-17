@@ -6,10 +6,6 @@ from .todoist import TodoistRemote
 from .models import Task
 
 
-# TODO obviously this cant really be a constant, so some more elastic system is needed
-TARGET_MAX_DECK_SIZE = 150
-
-
 def no_due_date_on_priority_item(remote: TodoistRemote) -> None:
     """Check that priority items have a due date."""
     check_filter = "(p1 | p2 | p3) & no date"
@@ -24,31 +20,6 @@ def no_due_date_on_priority_item(remote: TodoistRemote) -> None:
     else:
         if len(check_tasks) > 0:
             remote.delete_task(check_tasks[0])
-
-
-def on_deck_grooming(remote: TodoistRemote) -> None:
-    """Scans the "On Deck" (p3) and creates various meta tasks to keep it groomed.
-
-    If any of the following are true, a corresponding ticket is made, and deleted if not:
-
-    - # of p3 tasks > TARGET_MAX_DECK_SIZE
-    """
-   # This used to also handle the "review_on_deck" label until I realized that can just be its own filter
-
-    # on_deck_grooming
-    on_deck_grooming_task_name = "On Deck Grooming: Too many tasks"
-    on_deck_grooming_tasks = remote.get_tasks(name=on_deck_grooming_task_name)
-    filter = "p3"
-    tasks = remote.get_tasks(filter=filter)
-    if len(tasks) > TARGET_MAX_DECK_SIZE:
-        if len(on_deck_grooming_tasks) == 0:
-            remote.create_task(Task(name=on_deck_grooming_task_name), project_name="Meta")
-        else:
-            typer.secho(f"✅ '{on_deck_grooming_task_name}' task found", fg=typer.colors.GREEN)
-    else:
-        if len(on_deck_grooming_tasks) > 0:
-            remote.delete_task(on_deck_grooming_tasks[0])
-
 
 def inbox_cleanup(remote: TodoistRemote) -> None:
     """Keep the inbox clear - all tasks should be assigned to a project."""

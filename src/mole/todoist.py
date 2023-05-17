@@ -2,13 +2,14 @@ from __future__ import annotations
 import os
 from typing import Optional
 import datetime as dt
+import requests
 
 from dataclasses import dataclass, field
 import typer
 
 from todoist_api_python.api import TodoistAPI
 
-from .models import Task
+from .models import Task, CompletedTask
 
 
 class TodoistException(Exception):
@@ -28,7 +29,6 @@ class TodoistRemote:
         api_key = os.environ.get("TODOIST_API_KEY")
         if api_key is None or len(api_key) != 40:
             raise TodoistException("TODOIST_API_KEY must be set to a valid API key")
-
         self.api = TodoistAPI(api_key)
         all_projects = self.api.get_projects()
         default_projects = [p for p in all_projects if p.name == self.default_project_name]
@@ -39,8 +39,13 @@ class TodoistRemote:
             self.project_map[project.name] = project.id
         self.project_id_map = {v: k for k, v in self.project_map.items()}
 
-
-    def get_tasks(self, name: Optional[str] = None, project_name: Optional[str]=None, filter: Optional[str] = None, label: Optional[str] = None) -> list[Task]:
+    def get_tasks(
+        self,
+        name: Optional[str] = None,
+        project_name: Optional[str]=None,
+        filter: Optional[str] = None,
+        label: Optional[str] = None
+    ) -> list[Task]:
         project_id = self.project_map[project_name] if project_name is not None else None
         
         # BUG: Searching by label fails, but you can use filters. This is a bug in the todoist api.
@@ -114,3 +119,30 @@ class TodoistRemote:
 
         typer.secho(f"🔄 Updating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
         self.api.update_task(task.id, content=task.name, due=task.due, labels=list(task.labels), description=task.description, priority=task.priority)
+
+    def get_completed_tasks(self, project_id: Optional[int] = None, limit: int = 200, since: Optional[dt.datetime] = None) -> list[CompletedTask]:
+        """Get completed tasks from the todoist API."""
+        # Uses v9 sync API, because the rest API doesnt support completed tasks
+        # TODO this entire module aught to move to sync API, no?
+        headers = { 'Authorization: Bearer': os.environ.get("TODOIST_API_KEY") }
+        params = {}
+        if project_id:
+            params['project_id'] = project_id
+        if limit:
+            params['limit'] = limit
+        if since:
+            # Doc format example: 2007-04-29T10:13 -- almost isoformat?
+            # TODO handle TZ, I guess? Maybe just use isoformat?
+            params['since'] = since.strftime('%Y-%m-%dT%H:%M')
+
+        response = requests.get(
+            'https://api.todoist.com/sync/v9/completed/get_all',
+            headers=headers,  # type: ignore
+            params=params
+        )
+        assert response.status_code == 200
+        data = response.json()
+        tasks = []
+        for item in data['items']:
+            tasks.append(CompletedTask(**item))
+        return tasks

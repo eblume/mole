@@ -26,5 +26,17 @@ class Task:
 
 
 @dataclass
+class CompletedTask:
+    id: int
+    task_id: int
+    user_id: int
+    project_id: int
+    content: str
+    completed_date: str
+    note_count: int
+    meta_data: str
+
+
+@dataclass
 class Tag:
     name: str
