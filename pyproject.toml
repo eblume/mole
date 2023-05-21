@@ -19,6 +19,7 @@ todoist-api-python = "^2.0.2"
 jira = "^3.5.0"
 psutil = "^5.9.5"
 openai = "^0.27.6"
+python-dateutil = "^2.8.2"
 
 
 [tool.poetry.scripts]
