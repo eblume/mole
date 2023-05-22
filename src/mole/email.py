@@ -66,7 +66,7 @@ def check_email(remote: TodoistRemote) -> None:
 
         if len(existing_tasks) == 0:
             if email_count > 0:
-                remote.create_task(Task(task_name, priority=4))
+                remote.create_task(Task(task_name, priority=1))
             else:
                 typer.secho(f"📬 Nothing to do for [{account}/{inbox}]", fg=typer.colors.GREEN)
         else:
