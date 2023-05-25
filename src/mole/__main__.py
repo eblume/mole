@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
+from pathlib import Path
 
 import typer
-import datetime as dt
 
 from .todoist import TodoistRemote, TodoistException
 from .email import check_email
@@ -43,18 +44,26 @@ def whack():
 
 
 @app.command()
-def journal():
+def journal(startinsert: bool = typer.Option(True, "--startinsert/--no-startinsert", help="Start in insert mode on the last line")):
     """Write a journal entry using $EDITOR"""
-    # Run $EDITOR and return the result
-    # TODO this isn't quite right. Instead of a new file every time, it should open the same day's file each time.
-    today = dt.datetime.now().date()
-    entry = typer.edit(read_journal(today), extension='.md', require_save=True)
+    editor = os.getenv('EDITOR', None)
+    if not editor:
+        # Not strictly necessary as I think typer.edit will still function, however, in my case it is always an error
+        # and I want to know about it. It also breaks the vim startmode.
+        typer.secho('📓 No $EDITOR set, cannot write journal entry', fg=typer.colors.RED)
+        return
+
+    if startinsert and Path(editor).name in ['vim', 'nvim', 'vi']:
+        # Start in insert mode on the last line
+        editor += ' -c "normal Go" -c "startinsert"'
+
+    entry = typer.edit(read_journal(), extension='.md', require_save=True, editor=editor)
 
     if entry is None:
         typer.secho('📓 No journal entry written', fg=typer.colors.YELLOW)
         return
 
-    write_journal(entry, today)
+    write_journal(entry)
 
 
 @app.command()
