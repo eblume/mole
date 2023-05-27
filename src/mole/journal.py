@@ -83,7 +83,7 @@ def read_journal(when: Optional[dt.datetime] = None, add_subheading: bool = True
 def ensure_journal(remote: TodoistRemote):
     """Manage a to-do for a daily journal entry"""
     task_name = "Daily Journal"
-    now = dt.datetime.now()
+    now = dt.datetime.now(tzlocal())
     existing_tasks = remote.get_tasks(project_name="Life", name=task_name)
     existing_entry = journal_entry(now)
 
