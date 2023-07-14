@@ -9,10 +9,7 @@ import boto3
 
 from .todoist import TodoistRemote
 from .models import Task
-from .blumeops import boto_session
-
-
-s3_resource = boto_session.resource('s3')
+from .blumeops import boto_resource
 
 
 BUCKET_NAME = "blumeops"
@@ -27,7 +24,7 @@ def journal_exists(when: dt.date) -> bool:
     """Return true if the journal entry exists"""
     journal_file_key = journal_entry(when)
     try:
-        s3_resource.Object(BUCKET_NAME, journal_file_key).load()  # type: ignore
+        boto_resource('s3').Object(BUCKET_NAME, journal_file_key).load()  # type: ignore
         return True
     except boto3.exceptions.botocore.exceptions.ClientError as e:  # type: ignore
         if e.response['Error']['Code'] == "404":
@@ -49,7 +46,7 @@ def write_journal(entry: str, when: Optional[dt.datetime] = None) -> None:
     file.write(entry.encode())
     file.seek(0)
     
-    s3_resource.Bucket(BUCKET_NAME).put_object(Body=file, Key=journal_file_key)  # type: ignore
+    boto_resource('s3').Bucket(BUCKET_NAME).put_object(Body=file, Key=journal_file_key)  # type: ignore
 
 
 def read_journal(when: Optional[dt.datetime] = None, add_subheading: bool = True) -> str:
@@ -62,7 +59,7 @@ def read_journal(when: Optional[dt.datetime] = None, add_subheading: bool = True
 
     journal_file_key = journal_entry(when.date())
     try:
-        obj = s3_resource.Object(BUCKET_NAME, journal_file_key)  # type: ignore
+        obj = boto_resource('s3').Object(BUCKET_NAME, journal_file_key)  # type: ignore
         file = io.BytesIO()
         obj.download_fileobj(file)
         file.seek(0)

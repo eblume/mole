@@ -4,5 +4,5 @@
 set -o errexit
 set -o nounset
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 exec poetry run python -m mole "$@"

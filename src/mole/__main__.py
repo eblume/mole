@@ -11,8 +11,12 @@ from .jira import check_jira, JiraException
 from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, inbox_cleanup
 from .journal import ensure_journal, write_journal, read_journal
+from .blumeops import require_blumeops
 
-app = typer.Typer()
+app = typer.Typer(
+    help="Mole is a tool for automating my life.",
+    no_args_is_help=True,
+)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -44,6 +48,7 @@ def whack():
 
 
 @app.command()
+@require_blumeops
 def journal(startinsert: bool = typer.Option(True, "--startinsert/--no-startinsert", help="Start in insert mode on the last line")):
     """Write a journal entry using $EDITOR"""
     editor = os.getenv('EDITOR', None)
