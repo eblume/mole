@@ -1,6 +1,6 @@
 """Play a game with AI"""
 from __future__ import annotations
-        
+
 from dataclasses import asdict, dataclass, field
 import textwrap
 import json
@@ -39,7 +39,7 @@ class Game:
             self.recent_rounds.append(Round(action, challenge, result, situation))
             if len(self.recent_rounds) > MAX_ROUNDS_REMEMBERED:
                 self.recent_rounds.pop(0)
-            prompt = self.player_prompt() 
+            prompt = self.player_prompt()
             action = typer.prompt(prompt)
 
     def player_prompt(self) -> str:
@@ -212,4 +212,3 @@ def _dict_add(a: dict[str, int], b: dict[str, int]) -> dict[str, int]:
         if key not in result:
             result[key] = value
     return result
-

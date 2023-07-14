@@ -13,6 +13,7 @@ from .meta import no_due_date_on_priority_item, inbox_cleanup
 from .journal import ensure_journal, write_journal, read_journal
 from .blumeops import require_blumeops
 
+
 app = typer.Typer(
     help="Mole is a tool for automating my life.",
     no_args_is_help=True,
@@ -78,7 +79,8 @@ def game():
     STATUS: Not yet working. Basic pattern is mostly there, but need to switch from Completion api to Chat.Completion
     API, not sure why.
     """
-    import os, openai
+    import os
+    import openai
     from .game import Game, Player
 
     openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -90,7 +92,8 @@ def game():
 @app.command()
 def summary(temperature: float = 0.3, extra_prompt: str = ""):
     """Get an LLM summary of the day"""
-    import openai, os
+    import openai
+    import os
     openai.api_key = os.getenv('OPENAI_API_KEY')
 
     from .summary import get_summary

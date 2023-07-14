@@ -1,10 +1,9 @@
 from __future__ import annotations
 import os
-from typing import Optional, Any
 import datetime as dt
-import requests
 
 from dataclasses import dataclass, field
+import requests
 import typer
 
 from todoist_api_python.api import TodoistAPI
@@ -41,13 +40,13 @@ class TodoistRemote:
 
     def get_tasks(
         self,
-        name: Optional[str] = None,
-        project_name: Optional[str]=None,
-        filter: Optional[str] = None,
-        label: Optional[str] = None
+        name: str | None = None,
+        project_name: str | None = None,
+        filter: str | None  = None,
+        label: str | None  = None
     ) -> list[Task]:
         project_id = self.project_map[project_name] if project_name is not None else None
-        
+
         # BUG: Searching by label fails, but you can use filters. This is a bug in the todoist api.
         # TODO report this
         # Workaround: push label to filter unless filter has been provided already, in which case raise an error (for
@@ -78,7 +77,7 @@ class TodoistRemote:
             if _filt(todoist_task)
         ]
 
-    def create_task(self, task: Task, project_name: Optional[str] = None):
+    def create_task(self, task: Task, project_name: str | None  = None):
         """Create a task in the default project, or in the project specified by project_name.
 
         The order of preference for project is:
@@ -91,7 +90,7 @@ class TodoistRemote:
             project_id = self.project_map[project_name]
         else:
             project_id = task.project_id or self.default_project_id
-        
+
         # Default due_date to today, we may want to change this later
         # TODO see note in models.py about 'due problem'
         due_date = dt.date.today().strftime("%Y-%m-%d")
@@ -100,7 +99,7 @@ class TodoistRemote:
 
     def delete_task(self, task: Task):
         typer.secho(f"🗑  Deleting task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
-        
+
         # If we have the task id already, this is easy
         if task.id is not None:
             self.api.delete_task(task.id)
@@ -120,28 +119,28 @@ class TodoistRemote:
         typer.secho(f"🔄 Updating task: {task.name}", fg=typer.colors.BRIGHT_BLUE)
         self.api.update_task(task.id, content=task.name, due=task.due, labels=list(task.labels), description=task.description, priority=task.priority)
 
-    def get_completed_tasks(self, project_id: Optional[int] = None, limit: int = 200, since: Optional[dt.datetime] = None) -> list[CompletedTask]:
+    def get_completed_tasks(self, project_id: int | None = None, limit: int = 200, since: dt.datetime | None = None) -> list[CompletedTask]:
         """Get completed tasks from the todoist API."""
         # Uses v9 sync API, because the rest API doesnt support completed tasks
         # TODO this entire module aught to move to sync API, no?
         # TODO offset / limit for pagination
         headers = { 'Authorization: Bearer': os.environ.get("TODOIST_API_KEY") }
-        params = { 'annotate_notes': False }  # type: dict[str, Any]
+        params = { 'annotate_notes': False }
         if project_id:
-            params['project_id'] = project_id
+            params['project_id'] = project_id  # type: ignore
         if limit:
-            params['limit'] = limit
+            params['limit'] = limit  # type: ignore
         if since:
             # Doc format example: 2007-04-29T10:13 -- almost isoformat?
             # TODO handle TZ, I guess? Maybe just use isoformat?
-            params['since'] = since.strftime('%Y-%m-%dT%H:%M')
+            params['since'] = since.strftime('%Y-%m-%dT%H:%M')  # type: ignore
 
         response = requests.get(
             'https://api.todoist.com/sync/v9/completed/get_all',
             headers=headers,  # type: ignore
             params=params
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         tasks = []

@@ -41,11 +41,11 @@ def write_journal(entry: str, when: Optional[dt.datetime] = None) -> None:
     when = when or dt.datetime.now(tzlocal())
     journal_file_key = journal_entry(when.date())
     typer.secho(f'📓 Writing journal entry to s3://{BUCKET_NAME}/{journal_file_key}', fg=typer.colors.BLUE)
-    
+
     file = io.BytesIO()
     file.write(entry.encode())
     file.seek(0)
-    
+
     boto_resource('s3').Bucket(BUCKET_NAME).put_object(Body=file, Key=journal_file_key)  # type: ignore
 
 
@@ -70,7 +70,7 @@ def read_journal(when: Optional[dt.datetime] = None, add_subheading: bool = True
         return entry
     except boto3.exceptions.botocore.exceptions.ClientError as e:  # type: ignore
         if e.response['Error']['Code'] == "404":
-            typer.secho(f'📓 Journal entry does not exist, generating from template', fg=typer.colors.BLUE)
+            typer.secho('📓 Journal entry does not exist, generating from template', fg=typer.colors.BLUE)
             subheading = f'## {when.strftime("%H:%M")}\n' if add_subheading else ""
             return f'# {when.strftime("%A, %B %d, %Y")}\n{subheading}\n\n'
         else:

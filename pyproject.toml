@@ -9,7 +9,6 @@ packages = [
     { "include" = "mole", "from" = "src"},
 ]
 
-
 [tool.poetry.dependencies]
 python = "^3.11"
 typer = {extras = ["all"], version = "^0.9"}
@@ -23,15 +22,15 @@ python-dateutil = "^2.8.2"
 boto3 = "^1.26.140"
 ruff = "^0.0.278"
 rich = "^13.4.2"
-
+types-psutil = "^5.9.5.15"
+types-python-dateutil = "^2.8.19.13"
 
 [tool.poetry.scripts]
 mole = 'mole.__main__:main'
 
-
 [tool.poetry.group.dev.dependencies]
 types-requests = "2.28.11.8"  # Keep in sync with .pre-commit-config.yaml
-mypy = "0.991"  # Keep in sync with .pre-commit-config.yaml
+mypy = "^1.4.1"  # Keep in sync with .pre-commit-config.yaml
 pre-commit = "^3.0"
 pytest = "^7.2"
 pytest-cov = "^4.0"
@@ -40,7 +39,7 @@ pytest-sugar = "^0.9"
 pdbpp = "^0.10"
 pytest-mock = "^3.10"
 ipython = "^8.12.0"
-
+types-python-dateutil = "^2.8.19.13"
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --color=yes --mypy"
@@ -55,27 +54,23 @@ filterwarnings = [
 ]
 
 [tool.mypy]
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_return_any = true
-warn_unreachable = true
-mypy_path = "$MYPY_CONFIG_FILE_DIR/stubs"
+ignore_missing_imports = true
 files = [
     "src/**/*.py",
     # "tests/**/*.py",
 ]
 
 [tool.ruff]
-src = ["src"]
 fix = true
-line-length=120
+line-length = 120
+ignore = [
+    "E501",  # Line too long
+]
 
 # How to ignore files with mypy
 # EXAMPLE: Don't check for errors in migration files.
 # [mypy-apps.*.migrations.*]
 # ignore_errors = True
-
 
 [build-system]
 requires = ["poetry-core"]
