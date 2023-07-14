@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import sys
 from pathlib import Path
 
 import typer
@@ -26,6 +27,7 @@ logging.basicConfig(
 
 @app.command()
 def whack():
+    """Populate tasks in Todoist"""
     try:
         remote = TodoistRemote()
     except TodoistException as e:
@@ -40,7 +42,6 @@ def whack():
         typer.secho(f"🤷 Skipping Jira: {e}", fg=typer.colors.YELLOW)
 
     check_special_plan(remote)
-
     no_due_date_on_priority_item(remote)
     inbox_cleanup(remote)
     ensure_journal(remote)
@@ -100,8 +101,18 @@ def summary(temperature: float = 0.3, extra_prompt: str = ""):
     typer.echo(get_summary(temperature=temperature, extra_prompt=extra_prompt))
 
 
+@app.command()
+def version():
+    """Print the version"""
+    from . import __version__
+    typer.echo(f"mole version {__version__}")
+
+
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
 def main():
+    if os.getenv('VIRTUAL_ENV') and sys.argv[0].endswith('mole'):
+        typer.echo("🐭 Error: detected poetry environment AND pipx entrypoint, this will surely cause PYTHONPATH conflicts, aborting")
+        sys.exit(1)
     app()
 
 
