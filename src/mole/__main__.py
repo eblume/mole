@@ -12,7 +12,7 @@ from .jira import check_jira, JiraException
 from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, inbox_cleanup
 from .journal import ensure_journal, write_journal, read_journal
-from .blumeops import require_blumeops
+from .blumeops import require_blumeops, has_blumeops_profile
 
 
 app = typer.Typer(
@@ -44,7 +44,11 @@ def whack():
     check_special_plan(remote)
     no_due_date_on_priority_item(remote)
     inbox_cleanup(remote)
-    ensure_journal(remote)
+
+    if has_blumeops_profile():
+        ensure_journal(remote)
+    else:
+        typer.secho("🤷 Skipping Journal Check (no 'blumeops' AWS profile found)", fg=typer.colors.YELLOW)
 
     typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
 

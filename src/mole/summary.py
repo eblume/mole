@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .todoist import TodoistRemote
+from .credentials import ensure_openai
 
 import textwrap
 
@@ -13,6 +14,7 @@ MAX_TOKENS = 8096  # gpt-4 limit
 
 def get_summary(temperature: float, extra_prompt: str) -> str:
     """Summarize the day using an LLM"""
+    ensure_openai()
     remote = TodoistRemote()
     on_deck_tasks = remote.get_tasks(filter="today | overdue")
     state = {

@@ -21,13 +21,17 @@ def boto_resource(service_name: str) -> Any:
     return _SESSION.resource(service_name)
 
 
+def has_blumeops_profile() -> bool:
+    try:
+        boto_resource('sts').get_caller_identity()
+        return True
+    except (BotoCoreError, NoCredentialsError, ProfileNotFound):
+        return False
+
 def require_blumeops(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
-        try:
-            sts = boto_resource('sts')
-            sts.get_caller_identity()
-        except (BotoCoreError, NoCredentialsError, ProfileNotFound):
+        if not has_blumeops_profile():
             typer.secho('🚨 No blumeops profile found, cannot run command', fg=typer.colors.RED)
             typer.secho(f"Try `aws-vault exec blumeops -- mole {' '.join(sys.argv[1:])}`", fg=typer.colors.YELLOW)
             raise typer.Exit(1)

@@ -80,16 +80,14 @@ def read_journal(when: Optional[dt.datetime] = None, add_subheading: bool = True
 def ensure_journal(remote: TodoistRemote):
     """Manage a to-do for a daily journal entry"""
     task_name = "Daily Journal"
-    now = dt.datetime.now(tzlocal())
     existing_tasks = remote.get_tasks(project_name="Life", name=task_name)
-    existing_entry = journal_entry(now)
 
     if len(existing_tasks) > 1:
         for extra in existing_tasks[1:]:
             typer.secho(f'📓 Deleting extra journal entry task {extra}', fg=typer.colors.RED)
             remote.delete_task(extra)
 
-    if existing_entry is not None:
+    if journal_exists(dt.date.today()):
         if existing_tasks:
             # TODO complete, not delete
             remote.delete_task(existing_tasks[0])
