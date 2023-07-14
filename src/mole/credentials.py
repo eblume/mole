@@ -18,3 +18,13 @@ def todoist_key() -> str:
     if api_key is None or len(api_key) != 40:
         raise ValueError("Invalid Todoist API Key found in OnePassword.")
     return api_key
+
+
+def jira_key() -> str:
+    """Return the ADC/OE Jira API key"""
+    return get_item("Jira ADC/OE", "credential")
+
+
+def jira_hostname() -> str:
+    """Return the ADC/OE Jira hostname"""
+    return get_item("Jira ADC/OE", "hostname")

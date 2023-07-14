@@ -1,4 +1,3 @@
-import os
 import textwrap
 from typing import Dict
 
@@ -8,9 +7,7 @@ from jira import JIRA, Issue
 from .models import Task
 from .todoist import TodoistRemote
 from .vpn import is_vpn_connected
-
-API_KEY = os.getenv("JIRA_APPLICATION_KEY")
-URL = os.getenv("JIRA_SERVER_URL")
+from .credentials import jira_key, jira_hostname
 
 
 class JiraException(Exception):
@@ -18,17 +15,16 @@ class JiraException(Exception):
 
 
 def ensure_jira_ready() -> None:
-    if not URL:
-        raise JiraException("JIRA_SERVER_URL must be set")
-    elif not API_KEY:
-        raise JiraException("JIRA_APPLICATION_KEY must be set")
+    if not jira_hostname():
+        raise JiraException("Jira server hostname must be set in 1Password")
+    elif not jira_key():
+        raise JiraException("Jira API key must be set in 1Password")
     elif not is_vpn_connected():
         raise JiraException("VPN must be connected")
 
 
 def get_my_issues() -> Dict[str, str]:
-    assert URL is not None  # Checked by ensure_jira_ready
-    jira = JIRA(server=URL, token_auth=API_KEY)
+    jira = JIRA(server=f"https://{jira_key()}/jira", token_auth=jira_key())
     typer.secho("🔍 Fetching Jira issues", fg=typer.colors.YELLOW)
     issues = jira.search_issues("assignee = currentUser()")
 
@@ -65,7 +61,7 @@ def check_jira(remote: TodoistRemote) -> None:
     # Second, create missing tasks
     for name in new_tasks:
         task = name_to_jira_task[name]
-        ticket_url = f"{URL}/browse/{task}"
+        ticket_url = f"https://{jira_hostname()}/jira/browse/{task}"
         remote.create_task(Task(name, labels={"jira"}, description=ticket_url), project_name="Work")
 
 
