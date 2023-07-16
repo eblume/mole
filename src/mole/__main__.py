@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import typer
+import requests
 
 from .todoist import TodoistRemote, TodoistException
 from .email import check_email
@@ -13,6 +14,7 @@ from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, inbox_cleanup
 from .journal import ensure_journal, write_journal, read_journal
 from .blumeops import require_blumeops, has_blumeops_profile
+from .credentials import get_item
 
 
 app = typer.Typer(
@@ -103,6 +105,43 @@ def summary(temperature: float = 0.3, extra_prompt: str = ""):
 
     from .summary import get_summary
     typer.echo(get_summary(temperature=temperature, extra_prompt=extra_prompt))
+
+
+@app.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def miniflux(ctx: typer.Context):
+    """Run miniflux - runs with exec, so mole will exit"""
+    # TODO add upgrade logic
+    # Check for executable dir
+    miniflux_dir = Path.home() / 'code/3rd/miniflux/'
+    if not miniflux_dir.exists():
+        miniflux_dir.mkdir(parents=True)
+        typer.secho(f"🐭 Created miniflux dir at {miniflux_dir}", fg=typer.colors.YELLOW)
+
+    # Check for miniflux executable
+    miniflux = miniflux_dir / 'miniflux'
+    if not miniflux.exists():
+        miniflux_bin = miniflux_dir / 'miniflux-darwin-arm64'
+        typer.secho(f"🐭 Downloading miniflux to {miniflux_bin}", fg=typer.colors.YELLOW)
+        url = "https://github.com/miniflux/v2/releases/download/2.0.45/miniflux-darwin-arm64"
+        r = requests.get(url)
+        miniflux_bin.write_bytes(r.content)
+        miniflux_bin.chmod(0o755)
+        miniflux.symlink_to(miniflux_bin)
+
+    # Construct DATABASE_URL for postgres
+    db_user = 'miniflux'
+    db_pass = get_item('miniflux', 'password')
+    db_host = 'localhost'
+    db_port = 5432
+    db_name = 'miniflux'
+    # TODO fix sslmode issue
+    db_url = f"postgres://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?sslmode=disable"
+    os.environ['DATABASE_URL'] = db_url
+
+    # Run miniflux with exec
+    os.execv(miniflux, [str(miniflux)] + list(ctx.args))
 
 
 @app.command()
