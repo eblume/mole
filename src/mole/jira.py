@@ -24,11 +24,14 @@ def ensure_jira_ready() -> None:
 
 
 def get_my_issues() -> Dict[str, str]:
-    jira = JIRA(server=f"https://{jira_key()}/jira", token_auth=jira_key())
+    jira = JIRA(server=f"https://{jira_hostname()}/jira", token_auth=jira_key())  # type: ignore
     typer.secho("🔍 Fetching Jira issues", fg=typer.colors.YELLOW)
-    issues = jira.search_issues("assignee = currentUser()")
 
-    return {issue.key: issue.fields.summary for issue in issues if isinstance(issue, Issue)}
+    # TODO query syntax. For now, we just hard-code the only query we care about, but someday that will change.
+    query = "assignee = currentUser() AND Sprint is not EMPTY AND status NOT IN (Closed)"
+    issues = jira.search_issues(query)
+
+    return {issue.key: issue.fields.summary for issue in issues if isinstance(issue, Issue)}  # type: ignore
 
 
 def check_jira(remote: TodoistRemote) -> None:
@@ -67,3 +70,19 @@ def check_jira(remote: TodoistRemote) -> None:
 
 def make_name(ticket: str, summary: str) -> str:
     return textwrap.shorten(f"{ticket}: {summary}", width=100, placeholder="...")
+
+
+app = typer.Typer(help="Jira-related commands", no_args_is_help=True)
+
+@app.command()
+def assigned():
+    """Print the assigned Jira tickets"""
+    ensure_jira_ready()
+
+    jira_tasks = get_my_issues()
+    for task, summary in jira_tasks.items():
+        ticket_url = f"https://{jira_hostname()}/jira/browse/{task}"
+
+        typer.echo()
+        typer.secho(f"{task}: {summary}")
+        typer.secho(ticket_url, fg=typer.colors.BLUE)

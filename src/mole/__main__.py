@@ -9,7 +9,7 @@ import requests
 
 from .todoist import TodoistRemote, TodoistException
 from .email import check_email
-from .jira import check_jira, JiraException
+from .jira import check_jira, JiraException, app as jira_app
 from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, inbox_cleanup
 from .journal import ensure_journal, write_journal, read_journal
@@ -145,6 +145,9 @@ def lyrics():
     from .lyrics import get_lyrics
 
     typer.echo(get_lyrics())
+
+
+app.add_typer(jira_app, name="jira")
 
 
 @app.command()
