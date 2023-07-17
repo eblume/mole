@@ -106,7 +106,7 @@ def summary(temperature: float = 0.3, extra_prompt: str = ""):
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
 )
 def miniflux(ctx: typer.Context):
-    """Run miniflux - runs with exec, so mole will exit"""
+    """Run miniflux - runs with exec, extra args are passed to miniflux"""
     # TODO add upgrade logic
     # Check for executable dir
     miniflux_dir = Path.home() / 'code/3rd/miniflux/'
@@ -137,6 +137,14 @@ def miniflux(ctx: typer.Context):
 
     # Run miniflux with exec
     os.execv(miniflux, [str(miniflux)] + list(ctx.args))
+
+
+@app.command()
+def lyrics():
+    """Get lyrics for the current song"""
+    from .lyrics import get_lyrics
+
+    typer.echo(get_lyrics())
 
 
 @app.command()
