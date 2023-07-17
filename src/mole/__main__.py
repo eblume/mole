@@ -14,7 +14,7 @@ from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, inbox_cleanup
 from .journal import ensure_journal, write_journal, read_journal
 from .blumeops import require_blumeops, has_blumeops_profile
-from .credentials import get_item
+from .credentials import get_item, ensure_openai
 
 
 app = typer.Typer(
@@ -81,17 +81,14 @@ def journal(startinsert: bool = typer.Option(True, "--startinsert/--no-startinse
 
 @app.command()
 def game():
-    """Tell OpenAI to play a game. Requires OPENAI_API_KEY to be set.
+    """Tell OpenAI to play a game.
 
     STATUS: Not yet working. Basic pattern is mostly there, but need to switch from Completion api to Chat.Completion
     API, not sure why.
     """
-    import os
-    import openai
     from .game import Game, Player
 
-    openai.api_key = os.getenv('OPENAI_API_KEY')
-
+    ensure_openai()
     game = Game(Player())
     game.run()
 
@@ -99,11 +96,9 @@ def game():
 @app.command()
 def summary(temperature: float = 0.3, extra_prompt: str = ""):
     """Get an LLM summary of the day"""
-    import openai
-    import os
-    openai.api_key = os.getenv('OPENAI_API_KEY')
-
     from .summary import get_summary
+
+    ensure_openai()
     typer.echo(get_summary(temperature=temperature, extra_prompt=extra_prompt))
 
 
