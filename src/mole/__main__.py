@@ -13,8 +13,6 @@ from .jira import check_jira, JiraException, app as jira_app
 from .ynab import app as ynab_app
 from .romance import check_special_plan
 from .meta import no_due_date_on_priority_item, inbox_cleanup
-from .journal import ensure_journal, write_journal, read_journal
-from .blumeops import require_blumeops, has_blumeops_profile
 from .credentials import get_item, ensure_openai
 
 
@@ -48,36 +46,7 @@ def whack():
     no_due_date_on_priority_item(remote)
     inbox_cleanup(remote)
 
-    if has_blumeops_profile():
-        ensure_journal(remote)
-    else:
-        typer.secho("🤷 Skipping Journal Check (no 'blumeops' AWS profile found)", fg=typer.colors.YELLOW)
-
     typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
-
-
-@app.command()
-@require_blumeops
-def journal(startinsert: bool = typer.Option(True, "--startinsert/--no-startinsert", help="Start in insert mode on the last line")):
-    """Write a journal entry using $EDITOR"""
-    editor = os.getenv('EDITOR', None)
-    if not editor:
-        # Not strictly necessary as I think typer.edit will still function, however, in my case it is always an error
-        # and I want to know about it. It also breaks the vim startmode.
-        typer.secho('📓 No $EDITOR set, cannot write journal entry', fg=typer.colors.RED)
-        return
-
-    if startinsert and Path(editor).name in ['vim', 'nvim', 'vi']:
-        # Start in insert mode on the last line
-        editor += ' -c "normal Go" -c "startinsert"'
-
-    entry = typer.edit(read_journal(), extension='.md', require_save=True, editor=editor)
-
-    if entry is None:
-        typer.secho('📓 No journal entry written', fg=typer.colors.YELLOW)
-        return
-
-    write_journal(entry)
 
 
 @app.command()
