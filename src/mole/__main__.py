@@ -2,18 +2,10 @@
 import logging
 import os
 import sys
-from pathlib import Path
 
 import typer
-import requests
-
-from .todoist import TodoistRemote, TodoistException
-from .email import check_email
-from .jira import check_jira, JiraException, app as jira_app
-from .ynab import app as ynab_app
-from .romance import check_special_plan
-from .meta import no_due_date_on_priority_item, inbox_cleanup
-from .credentials import get_item, ensure_openai
+from rich.console import Console
+from rich.table import Table
 
 
 app = typer.Typer(
@@ -21,119 +13,51 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-
-
-@app.command()
-def whack():
-    """Populate tasks in Todoist"""
-    try:
-        remote = TodoistRemote()
-    except TodoistException as e:
-        typer.secho(f"🐭 Error: {e}", fg=typer.colors.RED)
-        return
-
-    check_email(remote)
-
-    try:
-        check_jira(remote)
-    except JiraException as e:
-        typer.secho(f"🤷 Skipping Jira: {e}", fg=typer.colors.YELLOW)
-
-    check_special_plan(remote)
-    no_due_date_on_priority_item(remote)
-    inbox_cleanup(remote)
-
-    typer.secho("\n🐭 Done whacking moles", fg=typer.colors.GREEN)
-
-
-@app.command()
-def game():
-    """Tell OpenAI to play a game.
-
-    STATUS: Not yet working. Basic pattern is mostly there, but need to switch from Completion api to Chat.Completion
-    API, not sure why.
-    """
-    from .game import Game, Player
-
-    ensure_openai()
-    game = Game(Player())
-    game.run()
-
-
-@app.command()
-def summary(temperature: float = 0.3, extra_prompt: str = ""):
-    """Get an LLM summary of the day"""
-    from .summary import get_summary
-
-    ensure_openai()
-    typer.echo(get_summary(temperature=temperature, extra_prompt=extra_prompt))
-
-
-@app.command(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
-)
-def miniflux(ctx: typer.Context):
-    """Run miniflux - runs with exec, extra args are passed to miniflux"""
-    # TODO add upgrade logic
-    # Check for executable dir
-    miniflux_dir = Path.home() / 'code/3rd/miniflux/'
-    if not miniflux_dir.exists():
-        miniflux_dir.mkdir(parents=True)
-        typer.secho(f"🐭 Created miniflux dir at {miniflux_dir}", fg=typer.colors.YELLOW)
-
-    # Check for miniflux executable
-    miniflux = miniflux_dir / 'miniflux'
-    if not miniflux.exists():
-        miniflux_bin = miniflux_dir / 'miniflux-darwin-arm64'
-        typer.secho(f"🐭 Downloading miniflux to {miniflux_bin}", fg=typer.colors.YELLOW)
-        url = "https://github.com/miniflux/v2/releases/download/2.0.45/miniflux-darwin-arm64"
-        r = requests.get(url)
-        miniflux_bin.write_bytes(r.content)
-        miniflux_bin.chmod(0o755)
-        miniflux.symlink_to(miniflux_bin)
-
-    # Construct DATABASE_URL for postgres
-    db_user = 'miniflux'
-    db_pass = get_item('miniflux', 'password')
-    db_host = 'localhost'
-    db_port = 5432
-    db_name = 'miniflux'
-    # TODO fix sslmode issue
-    db_url = f"postgres://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?sslmode=disable"
-    os.environ['DATABASE_URL'] = db_url
-
-    # Run miniflux with exec
-    os.execv(miniflux, [str(miniflux)] + list(ctx.args))
-
-
-@app.command()
-def lyrics():
-    """Get lyrics for the current song"""
-    from .lyrics import get_lyrics
-
-    typer.echo(get_lyrics())
-
-
-app.add_typer(jira_app, name="jira")
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 
 @app.command()
 def version():
     """Print the version"""
     from . import __version__
+
     typer.echo(f"mole version {__version__}")
 
 
-app.add_typer(ynab_app, name="ynab")
+@app.command()
+def health():
+    """Run health checks for this mole instance"""
+    from .health import health_checks
+
+    def _make_table():
+        table = Table(title="Health Checks", show_header=True, header_style="bold magenta")
+        table.add_column("")
+        table.add_column("Check")
+        table.add_column("Status")
+
+        count = 0
+        success = 0
+        for check in health_checks():
+            count += 1
+            if check.status.value == "success":
+                success += 1
+            table.add_row(check.status.emoji, f"[{check.status.color}]{check.name}[/]", check.message)
+
+        table.add_section()
+        table.add_row("", "[bold]Total[/]", f"{success}/{count} checks passed")
+
+        return table
+
+    console = Console()
+    console.print(_make_table())
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
 def main():
-    if os.getenv('VIRTUAL_ENV') and sys.argv[0].endswith('mole'):
-        typer.echo("🐭 Error: detected poetry environment AND pipx entrypoint, this will surely cause PYTHONPATH conflicts, aborting")
+    if os.getenv("VIRTUAL_ENV") and sys.argv[0].endswith("mole"):
+        typer.echo(
+            "🐭 Error: detected poetry environment AND pipx entrypoint, this will surely cause PYTHONPATH conflicts, aborting"
+        )
         sys.exit(1)
     app()
 
