@@ -52,6 +52,14 @@ def health():
     console.print(_make_table())
 
 
+@app.command()
+def airflow(port: int = 8081):
+    """Run apache airflow locally on the specified port"""
+    from .airflow import run_airflow
+
+    run_airflow(port)
+
+
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
 def main():
     if os.getenv("VIRTUAL_ENV") and sys.argv[0].endswith("mole"):
