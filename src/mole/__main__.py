@@ -53,11 +53,15 @@ def health():
 
 
 @app.command()
-def airflow(port: int = 8081):
-    """Run apache airflow locally on the specified port"""
-    from .airflow import run_airflow
+def whack():
+    """Whack the mole. A long-lived watcher process.
 
-    run_airflow(port)
+    This entrypoint spawns a long-lived watcher process that will react to certain events. It is intended to be run with
+    OP_SERVICE_ACCOUNT_TOKEN set for secret access, or else it will block on user acceptance for access (which is fine.)
+    """
+    from .whack import whack
+
+    whack()
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
