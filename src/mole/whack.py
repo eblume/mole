@@ -14,7 +14,6 @@ OBSERVER_JOIN_INTERVAL = 1  # seconds
 def whack() -> None:
     """A long-lived watcher process that will react to certain events."""
 
-    typer.echo("Whacking moles 🐹")
     user = json.loads(subprocess.check_output("op user get --me --format=json", shell=True))
     typer.echo(f"Running as {user['name']} <{user['email']}> (id: {user['id']})")
 
@@ -23,6 +22,7 @@ def whack() -> None:
     observer = WhackObserver()
     observer.start()
 
+    typer.echo("Whacking moles 🐹")
     try:
         # I need to harp about something for a second. The whole reason I decided to go down the rabbithole of using
         # an FSEvent/inotify/kqueue-aware watch library is because I wanted to avoid polling. But here I am, polling.

@@ -2,6 +2,7 @@
 import logging
 import os
 import sys
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -62,6 +63,24 @@ def whack():
     from .whack import whack
 
     whack()
+
+
+@app.command()
+def log(
+    entry_text: Optional[str] = typer.Argument(None), subtitle: Optional[str] = typer.Option(None, "--subtitle", "-s")
+):
+    """Add an entry to the daily log."""
+    from .notebook import add_log
+
+    # Check if stdin has data
+    if not sys.stdin.isatty():
+        if entry_text:
+            typer.echo("🐭 Error: stdin and entry_text are mutually exclusive")
+            sys.exit(1)
+
+        entry_text = "".join(sys.stdin.readlines())
+
+    add_log(entry_text, subtitle)
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)

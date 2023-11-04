@@ -6,11 +6,13 @@ import tempfile
 import os
 
 import typer
+import pendulum
 import openai
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from pydub import AudioSegment
 
 from .todoist import create_task
+from .notebook import add_log
 
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
@@ -65,16 +67,13 @@ def handle_vm(path: Path) -> None:
     - Transcribe the audio using whisper.cpp
     - Extract tasks from the transcription using GPT-4
     - Create tasks in Todoist
+    - Record the transcription in nb-cli and sync it.
 
     TODO:
-    - Record the transcription in nb-cli and sync it.
     - Archive the audio.
     """
     # Example path: /Users/erichdblume/Library/Mobile Documents/iCloud~com~openplanetsoftware~just-press-record/Documents/2023-11-02/23-35-20.m4a
-    # date = dt.date(*map(int, path.parent.name.split('-')))
-    # time = dt.time(*map(int, path.stem.split('-')))
-    # when = pendulum.local(date.year, date.month, date.day, time.hour, time.minute, time.second)
-    # NB: We don't currently use `when` but we will when we once again start logging to nb-cli
+    when = pendulum.local(*map(int, path.parent.name.split("-")), *map(int, path.stem.split("-")))
 
     # Re-encode the audio to 16000Hz wav
     audio = AudioSegment.from_file(str(path))
@@ -109,6 +108,9 @@ def handle_vm(path: Path) -> None:
     ]
     for task in tasks:
         create_task(task)
+
+    # Record the transcription in nb-cli
+    add_log(cleaned, title="Voice Memo", when=when)
 
     # TODO archive
     os.unlink(path)
