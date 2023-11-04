@@ -110,7 +110,7 @@ def handle_vm(path: Path) -> None:
         create_task(task)
 
     # Record the transcription in nb-cli
-    add_log(cleaned, title="Voice Memo", when=when)
+    add_log(cleaned, subtitle="Voice Memo", when=when)
 
     # TODO archive
     os.unlink(path)
