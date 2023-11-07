@@ -12,6 +12,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from .projects import app as project_app
 
 app = typer.Typer(
     help="Mole is a tool for automating my life.",
@@ -85,6 +86,9 @@ def log(
         entry_text = "".join(sys.stdin.readlines())
 
     add_log(entry_text, subtitle)
+
+
+app.add_typer(project_app, name="project")
 
 
 @app.command()
