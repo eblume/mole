@@ -1,6 +1,4 @@
 from pathlib import Path
-import time
-import plistlib
 import subprocess
 import tempfile
 import os
@@ -129,8 +127,6 @@ def ensure_voicememo() -> None:
 
     It will attempt to fix these issues if it can detect them broken, and it will also launch JPR and background it to make sure the app is syncing.
     """
-    # Yes, this one got away from me. TODO - modularize it.
-
     ## 1Password
     # Ensure 1Password CLI is installed by checking user info
     try:
@@ -155,65 +151,6 @@ def ensure_voicememo() -> None:
         typer.echo("Installing Just Press Record...")
         subprocess.check_output("mas install 1033342465", shell=True)
 
-    # Ensure Just Press Record is configured to save to iCloud
-    try:
-        # No idea why they use '-for-iOS' in the domain name, but that's what it is
-        subprocess.check_output("defaults read com.openplanetsoftware.Just-Press-Record-for-iOS", shell=True)
-    except subprocess.CalledProcessError:
-        # If this doesn't exist yet, we will need to warn the user we are opening JPR and ask them to take a second
-        # to configure it. We could maybe try and do this with plistlib ourselves but I don't actually know how
-        # iCloud sync triggers work and I think it's better to just let the user do it once.
-        typer.secho(
-            "⚠️  Just Press Record hasn't been configured yet, it will now launch. You can then configure it, or quit it, or leave it.",
-            fg=typer.colors.YELLOW,
-        )
-        subprocess.check_output("open -a 'Just Press Record'", shell=True)
-
-        typer.secho(
-            "⚠️  If accessibility is not enabled, the script will now ask you to enable it. Please do so.",
-            fg=typer.colors.YELLOW,
-        )
-        typer.echo(
-            "(This allows mole to send keyboard shortcuts to Just Press Record - if you don't like this, just configure JPR to save to iCloud manually and this will be skipped."
-        )
-        # PS I originally tried to do an inline compilation of a swift program to check AXIsProcessTrustedWithOptions,
-        # and while this worked, it _also_ showed the permissions prompt (even though the result of that prompt did not
-        # impede the script from working). So, we will just use osascript directly and warn the user ahead of time.
-
-        # Try to background it using osascript
-        subprocess.check_output(
-            'osascript -e \'tell application "Just Press Record" to activate\' -e \'tell application "System Events" to keystroke "h" using {command down}\'',
-            shell=True,
-        )
-
-        # Let's sleep for 5 seconds, just to let things settle in the OS a bit
-        typer.secho("⏳  Waiting 5 seconds for Just Press Record to self-configure...", fg=typer.colors.YELLOW)
-        time.sleep(5)
-
-    # Now we can check if the defaults exists again, and if not, bail with an error.
-    try:
-        subprocess.check_output("defaults read com.openplanetsoftware.Just-Press-Record-for-iOS", shell=True)
-    except subprocess.CalledProcessError:
-        typer.secho(
-            "❌  Just Press Record hasn't been configured yet, despite trying. Please file a bug report. Maybe try configuring it yourself?",
-            fg=typer.colors.RED,
-        )
-        raise typer.Exit(1)
-
-    # Now, configure it to save to iCloud (because we can)
-    # (Create a temporary file, export the defaults to it, read it with plistlib, check the value, and if it's not 1, set it to 1)
-    with tempfile.NamedTemporaryFile(mode="wb+") as f:
-        subprocess.check_output(
-            f"defaults export com.openplanetsoftware.Just-Press-Record-for-iOS {f.name}", shell=True
-        )
-        data = plistlib.load(Path(f.name).open("rb"))
-
-    if "JPRDataStoreIndex" not in data or data["JPRDataStoreIndex"] != 1:
-        typer.echo("Configuring Just Press Record to save to iCloud...")
-        subprocess.check_output(
-            "defaults write com.openplanetsoftware.Just-Press-Record-for-iOS JPRDataStoreIndex -int 1", shell=True
-        )
-
     # Ensure the iCloud JPR directory exists
     if not VoiceMemoHandler._path.exists():
         typer.echo(
@@ -231,11 +168,7 @@ def ensure_voicememo() -> None:
     # Update it, because why not
     typer.echo("Updating whisper.cpp...")
     subprocess.check_output(f"cd {WHISPER_CPP} && git pull", shell=True)
-
-    # Download the model
     subprocess.check_output(f"cd {WHISPER_CPP} && ./models/download-ggml-model.sh base.en", shell=True)
-
-    # Build it
     subprocess.check_output(f"cd {WHISPER_CPP} && make", shell=True)
 
     ## Task Extraction (currently from GPT-4)
