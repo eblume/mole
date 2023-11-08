@@ -105,7 +105,8 @@ def handle_vm(path: Path) -> None:
         if line.strip() and line.strip().lower() != "none"
     ]
     for task in tasks:
-        create_task(task)
+        link = create_task(task)
+        typer.echo(f"Created task: {link}")
 
     # Record the transcription in nb-cli
     add_log(cleaned, subtitle="Voice Memo", when=when)
