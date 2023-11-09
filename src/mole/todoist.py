@@ -1,7 +1,9 @@
-import subprocess
 import requests
 import json
 import uuid
+
+
+from .secrets import get_secret
 
 
 def create_task(title: str) -> str:
@@ -11,11 +13,7 @@ def create_task(title: str) -> str:
 
     Credentials are retrieved from 1password from the 'blumeops' vault.
     """
-    key = (
-        subprocess.check_output("op item --vault blumeops get 'Todoist' --fields credential", shell=True)
-        .decode()
-        .strip()
-    )
+    key = get_secret("Todoist", "credential", vault="blumeops")
 
     headers = {
         "Authorization": f"Bearer {key}",

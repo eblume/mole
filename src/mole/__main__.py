@@ -13,6 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .projects import app as project_app
+from .secrets import get_secret
 
 app = typer.Typer(
     help="Mole is a tool for automating my life.",
@@ -65,6 +66,7 @@ def whack():
     This entrypoint spawns a long-lived watcher process that will react to certain events. It is intended to be run with
     OP_SERVICE_ACCOUNT_TOKEN set for secret access, or else it will block on user acceptance for access (which is fine.)
     """
+    # TODO unwrap this, I just can't test it right now
     from .whack import whack
 
     whack()
@@ -81,7 +83,7 @@ def log(
     if not sys.stdin.isatty():
         if entry_text:
             typer.echo("🐭 Error: stdin and entry_text are mutually exclusive")
-            sys.exit(1)
+            raise typer.Exit(1)
 
         entry_text = "".join(sys.stdin.readlines())
 
@@ -144,6 +146,44 @@ def zonein(task: str):
             os.execvp("zellij", ["zellij", "--session", short, "--layout", f.name])
 
     os.execvp("zellij", ["zellij", "--session", short])
+
+
+@app.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def svcrun(unknown_args: typer.Context):
+    """Execute a command by wrapping it with a service account token."""
+    # TODO figure out how to get the --help to show COMMAND... instead of just [OPTIONS]
+    command = unknown_args.args
+    if not command:
+        typer.echo("🐭 Error: no command specified")
+        raise typer.Exit(1)
+    typer.echo(
+        "Loading service account token. This may prompt via 1password's GUI once and then the token will be cached."
+    )
+    typer.echo("(If this hangs, you need to run again from a terminal with a GUI.)")
+    token = get_secret("zukqtgtw5xt66k3z3il4hw366e", "credential", vault="blumeops")
+    typer.echo("Service account token loaded, the command will now run without interruption from 1password.")
+
+    env = os.environ.copy()
+    env["OP_SERVICE_ACCOUNT_TOKEN"] = token
+
+    # This used to do more with ssh-agent and service account specific keys, but now we rely on the 1password ssh agent
+    # integration with the "until 1password is closed" option. I reckon, if you can manipulate the svcrun process tree,
+    # you already have effectively root access via the OP_SERVICE_ACCOUNT_TOKEN, so there's no security benefit to
+    # requiring a seperate key. Ironically the more-secure option of using a file-less service-specific ssh-agent is
+    # blocked by the ~/.ssh/1password.config file which adds the 1password ssh agent to every ssh host's identity agent,
+    # which - even though we *already have a valid key loaded*, causes 1password to prompt for access to my personal
+    # vault (outside of OP_SERVICE_ACCOUNT_TOKEN). I tried trapping GIT_SSH_COMMAND and unsetting SSH_AUTH_SOCK and
+    # passing various ssh options for identity agent config but could not get ssh to consistently use the correct key.
+    # Oh well. This probably isn't a big deal. Unless someone is reading this, in which case yeah it turns out it was.
+    #
+    # The upshot is that this function is now literally just a wrapper around subprocess.run, which is fine.
+    try:
+        subprocess.run(command, env=env, check=True, capture_output=False)
+    except Exception as e:
+        typer.echo(f"🐭 Error: {e}")
+        raise typer.Exit(1)
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)

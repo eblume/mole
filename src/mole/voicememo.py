@@ -11,6 +11,7 @@ from pydub import AudioSegment
 
 from .todoist import create_task
 from .notebook import add_log
+from .secrets import get_secret
 
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
@@ -176,5 +177,4 @@ def ensure_voicememo() -> None:
     # For this sanity check we just import openai and make sure the key is set, and set it from op if not
     if not openai.api_key or "OPENAI_API_KEY" not in os.environ:
         typer.echo("Setting OpenAI API key...")
-        cred = subprocess.check_output("op item --vault blumeops get 'OpenAI' --fields credential", shell=True)
-        openai.api_key = cred.decode("utf-8").strip()
+        openai.api_key = get_secret("OpenAI", "credential", vault="blumeops")
