@@ -5,13 +5,11 @@ import os
 
 import typer
 import pendulum
-import openai
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from pydub import AudioSegment
 
-from .todoist import create_task
 from .notebook import add_log
-from .secrets import get_secret
+from .assistant import make_assistant, make_thread, add_message, run_thread
 
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
@@ -90,27 +88,14 @@ def handle_vm(path: Path) -> None:
     cleaned = "\n".join([line.strip() for line in transcription.split("\n") if line.strip()])
     os.unlink(wav.name)
 
-    # Extract tasks from transcription with GPT-4
-    prompt = "Please extract any tasks from the following voice memo, one task per line. If there are no tasks, just say 'none'. Be concise, don't respond with any chatter, and reword the tasks for brevity and clarity as needed. Thanks!"
-
-    # typer.echo(f"Extracting tasks from transcription for {path}...")
-    response = openai.ChatCompletion.create(
-        model="gpt-4", messages=[{"role": "system", "content": prompt}, {"role": "user", "content": cleaned}]
-    )
-    top_choice = response.choices[0]["message"]["content"]
-    # gpt-4 sometimes capitalizes None, plus we want to strip out both whitespace AND any leading dashs from markdown
-    # (so we are stripping out leading whitspace and dashes and empty lines)
-    tasks = [
-        line.strip().lstrip("-").strip()
-        for line in top_choice.split("\n")
-        if line.strip() and line.strip().lower() != "none"
-    ]
-    for task in tasks:
-        link = create_task(task)
-        typer.echo(f"Created task: {link}")
-
     # Record the transcription in nb-cli
     add_log(cleaned, subtitle="Voice Memo", when=when)
+
+    # Process the transcription through the assistant API
+    assistant = make_assistant()
+    thread = make_thread()
+    add_message(thread, cleaned)
+    run_thread(thread, assistant)
 
     # TODO archive
     os.unlink(path)
@@ -172,9 +157,3 @@ def ensure_voicememo() -> None:
     subprocess.check_output(f"cd {WHISPER_CPP} && git pull", shell=True)
     subprocess.check_output(f"cd {WHISPER_CPP} && ./models/download-ggml-model.sh base.en", shell=True)
     subprocess.check_output(f"cd {WHISPER_CPP} && make", shell=True)
-
-    ## Task Extraction (currently from GPT-4)
-    # For this sanity check we just import openai and make sure the key is set, and set it from op if not
-    if not openai.api_key or "OPENAI_API_KEY" not in os.environ:
-        typer.echo("Setting OpenAI API key...")
-        openai.api_key = get_secret("OpenAI", "credential", vault="blumeops")
