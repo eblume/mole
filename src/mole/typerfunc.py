@@ -58,8 +58,14 @@ class FunctionSpec:
         return struct
 
 
-def typerfunc(app: Typer) -> list[FunctionSpec]:
-    """Returns a list of FunctionSpecs describing the CLI of app."""
+def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
+    """Returns a list of FunctionSpecs describing the CLI of app.
+
+    This function recurses on command groups, with a command_prefix appended to the beginning of each command name in
+    that group.
+    """
+    if command_prefix is None:
+        command_prefix = app.info.name
     functions: list[FunctionSpec] = []
 
     for command_info in app.registered_commands:
@@ -68,6 +74,12 @@ def typerfunc(app: Typer) -> list[FunctionSpec]:
             pretty_exceptions_short=app.pretty_exceptions_short,
             rich_markup_mode=app.rich_markup_mode,
         )
+        fullname = f"{command_prefix} {command.name}"
+
+        if isinstance(command, Typer):
+            # Recurse on command groups
+            functions.extend(typerfunc(command, command_prefix=fullname))
+            continue
 
         # Extract callback signature for parameters.
         params = []
@@ -84,7 +96,7 @@ def typerfunc(app: Typer) -> list[FunctionSpec]:
             params.append(param_spec)
 
         spec = FunctionSpec(
-            name=command.name,
+            name=fullname,
             description=command.help,
             parameters=params,
         )

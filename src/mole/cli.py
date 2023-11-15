@@ -16,6 +16,7 @@ from .projects import app as project_app
 from .secrets import get_secret
 
 app = typer.Typer(
+    name="mole",
     help="Mole is a tool for automating my life.",
     no_args_is_help=True,
 )
