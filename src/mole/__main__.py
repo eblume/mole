@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-import logging
 import os
 import sys
 
 import typer
-
-
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 
 # Default entrypoint for poetry run mole here:  (specified in pyproject.toml)
