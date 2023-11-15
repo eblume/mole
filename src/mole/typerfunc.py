@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from typing import Optional
 
@@ -40,21 +41,15 @@ class FunctionSpec:
                         }
                         for param in self.parameters
                     },
+                    "required": [param.name for param in self.parameters if param.required],
                 },
             },
         }
 
-        # Second-pass parameter processing
+        # enum processing - do this in a second pass to avoid empty enums
         for param in self.parameters:
-            # Do these here instead of in the initial literal because we only want the property set if there are
-            # actually associated parameters.
             if param.enum:
-                struct["function"]["parameters"]["properties"][param.name]["enum"] = param.enum
-
-            if param.required:
-                required = struct["function"]["parameters"].get("required", [])
-                required.append(param.name)
-                struct["function"]["parameters"]["required"] = required
+                struct["function"]["parameters"]["properties"][param.name]["enum"] = list(param.enum)
         return struct
 
 
@@ -65,7 +60,8 @@ def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
     that group.
     """
     if command_prefix is None:
-        command_prefix = app.info.name
+        command_prefix = app.info.name or sys.argv[0]
+
     functions: list[FunctionSpec] = []
 
     for command_info in app.registered_commands:
@@ -74,7 +70,7 @@ def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
             pretty_exceptions_short=app.pretty_exceptions_short,
             rich_markup_mode=app.rich_markup_mode,
         )
-        fullname = f"{command_prefix} {command.name}"
+        fullname = f"{command_prefix}.{command.name}"
 
         if isinstance(command, Typer):
             # Recurse on command groups
@@ -101,4 +97,5 @@ def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
             parameters=params,
         )
         functions.append(spec)
+
     return functions
