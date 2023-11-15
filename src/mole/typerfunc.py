@@ -71,6 +71,7 @@ def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
             rich_markup_mode=app.rich_markup_mode,
         )
         fullname = f"{command_prefix}.{command.name}"
+        breakpoint()
 
         if isinstance(command, Typer):
             # Recurse on command groups

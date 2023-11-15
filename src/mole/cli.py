@@ -15,6 +15,7 @@ from rich.table import Table
 from .projects import app as project_app
 from .secrets import get_secret
 
+
 app = typer.Typer(
     name="mole",
     help="Mole is a tool for automating my life.",
@@ -150,10 +151,10 @@ def zonein(task: str):
 @app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
-def svcrun(unknown_args: typer.Context):
-    """Execute a command by wrapping it with a service account token."""
+def svcrun(ctx: typer.Context):
+    """Execute a command by wrapping it with a service account token. Any arguments are processed as a command."""
     # TODO figure out how to get the --help to show COMMAND... instead of just [OPTIONS]
-    command = unknown_args.args
+    command = ctx.args
     if not command:
         typer.echo("🐭 Error: no command specified")
         raise typer.Exit(1)
@@ -167,17 +168,6 @@ def svcrun(unknown_args: typer.Context):
     env = os.environ.copy()
     env["OP_SERVICE_ACCOUNT_TOKEN"] = token
 
-    # This used to do more with ssh-agent and service account specific keys, but now we rely on the 1password ssh agent
-    # integration with the "until 1password is closed" option. I reckon, if you can manipulate the svcrun process tree,
-    # you already have effectively root access via the OP_SERVICE_ACCOUNT_TOKEN, so there's no security benefit to
-    # requiring a seperate key. Ironically the more-secure option of using a file-less service-specific ssh-agent is
-    # blocked by the ~/.ssh/1password.config file which adds the 1password ssh agent to every ssh host's identity agent,
-    # which - even though we *already have a valid key loaded*, causes 1password to prompt for access to my personal
-    # vault (outside of OP_SERVICE_ACCOUNT_TOKEN). I tried trapping GIT_SSH_COMMAND and unsetting SSH_AUTH_SOCK and
-    # passing various ssh options for identity agent config but could not get ssh to consistently use the correct key.
-    # Oh well. This probably isn't a big deal. Unless someone is reading this, in which case yeah it turns out it was.
-    #
-    # The upshot is that this function is now literally just a wrapper around subprocess.run, which is fine.
     try:
         subprocess.run(command, env=env, check=True, capture_output=False)
     except Exception as e:
