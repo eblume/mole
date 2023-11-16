@@ -1,56 +1,11 @@
 import sys
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field, KW_ONLY
+from typing import Iterable, Optional
 
 from typer import Typer
 from typer.main import get_command_from_info
 
-
-# The best usage guide seems to be:
-#   https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models
-
-
-@dataclass
-class ParameterSpec:
-    name: str
-    description: str
-    required: bool
-    default: Optional[str] = None
-    enum: Optional[list[str]] = None
-
-
-@dataclass
-class FunctionSpec:
-    name: str
-    description: str
-    parameters: list[ParameterSpec]
-
-    def dict(self) -> dict:
-        struct = {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                "parameters": {  # This is now technically a JSONSchema object
-                    "type": "object",
-                    "properties": {
-                        param.name: {
-                            "type": "string",  # TODO other types?
-                            "description": param.description,
-                            "default": param.default or "None",
-                        }
-                        for param in self.parameters
-                    },
-                    "required": [param.name for param in self.parameters if param.required],
-                },
-            },
-        }
-
-        # enum processing - do this in a second pass to avoid empty enums
-        for param in self.parameters:
-            if param.enum:
-                struct["function"]["parameters"]["properties"][param.name]["enum"] = list(param.enum)
-        return struct
+from .assistant import Assistant, FunctionSpec, ParameterSpec
 
 
 def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
@@ -71,8 +26,6 @@ def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
             rich_markup_mode=app.rich_markup_mode,
         )
         fullname = f"{command_prefix}.{command.name}"
-        breakpoint()
-
         if isinstance(command, Typer):
             # Recurse on command groups
             functions.extend(typerfunc(command, command_prefix=fullname))
@@ -96,7 +49,27 @@ def typerfunc(app: Typer, command_prefix: str = None) -> list[FunctionSpec]:
             name=fullname,
             description=command.help,
             parameters=params,
+            action=command_info.callback,  # command_info.callback is the user function, command.callback is the internal click wrapper.
         )
         functions.append(spec)
 
     return functions
+
+
+@dataclass
+class AppAssistant(Assistant):
+    """An Assistant generated from a Typer app."""
+
+    app: Typer
+    _: KW_ONLY
+    instructions: str = "The agent is an interface to a python Typer CLI. The tools available correspond to typer commands. Please help the user with their queries, executing CLI functions as needed. Be concise."
+    name: Optional[str] = field(init=False, default=None)
+
+    def __post_init__(self):
+        self.name = self.app.info.name or sys.argv[0]
+        super().__post_init__()
+
+    def functions(self) -> Iterable[FunctionSpec]:
+        """Generate FunctionSpecs from the Typer app."""
+        yield from super().functions()  # currently a non-op but may be useful to others
+        yield from typerfunc(self.app)

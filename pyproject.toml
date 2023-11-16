@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mole"
-version = "0.3.8"
+version = "0.4.0"
 description = "Personal automation project"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
 license = "MIT License"
