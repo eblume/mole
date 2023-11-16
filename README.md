@@ -3,53 +3,63 @@ Mole
 Copyright 2023 Erich Blume <blume.erich@gmail.com>
 Provided under the MIT License. See LICENSE for more information.
 
-Mole is a thing I made to interact with my to-do lists. I've got big plans, but I'm going to start
-small.
+Mole is a Python Typer CLI, a program which helps my personal automation.
+
+For the most part, this repository is only intended to be directly helpful to myself, but sometimes I build things with
+mole that wind up being useful to other people.
+
+**mole changes rapidly with no warning and is not (yet) a candidate for stabile deployment.** Use at your own risk.
 
 
 How to Install
 --------------
 
-`pip install mole`... eventually. For now, you'll need to install it manually.
+First, clone the repository with . Then use [pipx](https://pypa.github.io/pipx/) to install mole.
 
-Personally, I have the git repo checked out locally, and I just use `poetry run python -m mole` from
-within this folder to run the client.
+```bash
+git clone http://github.com/eblume/mole
+pipx install ./mole
+```
 
-How to Test
------------
+You can later upgrade mole with `pipx upgrade mole` as per usual for pipx.
 
-This project uses `pyproject.toml` to track all root and development
-dependencies, including the entire build chain. `poetry` is used to.
-handle installing the project and all dependencies. `pytest` is used to run
-test sessions.
+`mole` is not currently distributed in any packaging system. Please file an issue if you'd like to have one set up!
+pip/PyPI, homebrew, asdf, apt, whatever people need, I'm happy to provide.
 
-TODO: This section is outdated and should be updated.
+`mole` also currently does not provide binary distributions (wheels, containers, etc.) - similarly please file an issue
+if you would like such a distribution format.
 
-1. Install `poetry` and initialize a new poetry environment.
 
-   ```bash
-   # Install poetry on a POSIX system (installation is 'upgrade-or-idempotent')
-   # (a Windows installer exists as well, see python-poetry.org)
-   $ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-   $ poetry install
-   ```
+Requirements
+------------
+Most requirements are handled automatically via poetry/pip/pipx. There are some additional requirements, some of which
+are optional.
 
-   (NB: You can also just `pip install poetry`, but this has
-   [known issues](https://python-poetry.org/docs/#alternative-installation-methods-not-recommended).)
+* [op](https://developer.1password.com/docs/cli/get-started/) - handles credentialling. `op` is currently a hard
+    requirement, including credentials with specific names needed throughout the codebase. This is of course impossible
+    for anyone other than me to use, but luckily a future change to the `secrets.py` file should make this more
+    portable.
+* [nb-cli](https://github.com/xwmx/nb) - A program I use to save context streams and log activities and store metadata.
+    I intend to eventually remove this dependency and instead use nb as one of an array of providers.
+* [OpenAI](http://openai.com) - You will need to provide an OpenAI API key to use many of moles' features. I can't
+    provide one for you.
 
-2. Run the test suite
 
-   ```bash
-   $ poetry run pytest
-   ```
+How to Use
+----------
+Mole is self-documenting and provides a natural language interface via a combination of [Typer](https://typer.tiangolo.com/) and [OpenAI](https://platform.openai.com/). You can simply execute `mole` with no arguments and a helpful message will be displayed.
+
+Furthermore, use `mole ask "What can you do?"` - indeed, you can ask for any help related to mole with `mole ask`, and
+if mole can do it, it will be done! This is accomplished using the OpenAI [Assistants API](https://platform.openai.com/docs/assistants/overview).
+
 
 How to Develop
 --------------
 
-Before doing any development this project, please install `poetry` as per
-option 1 of the "How to Test" section, above. **Then, please run the following**:
+For MacOS, you'll want something like:
 
 ```bash
+$ poetry install
 $ poetry run pre-commit install
 ```
 
@@ -58,13 +68,17 @@ repository, which will ensure that you can't commit code that will break
 Funicular. (You can bypass this with `git commit --no-verify`, but please be
 careful.)
 
+Please consult the [poetry](https://python-poetry.org/) docs for more information on how to develop in editable mode
+using poetry.
+
+A helper script, `bin/mole`, is provided which automatically activates the proper environment in a way that will
+automatically detect and fail if something is crossing a pipx/poetry boundary.
+
 How to Discuss
 --------------
 
 If you have design suggestions, questions, or bug reports - please file an
-Issue on this github project. You can also email me at blume.erich@gmail.com,
-but to be honest, I'm not the best at checking my email. Issues are more likely
-to be seen.
+Issue on this github project.
 
 How to Contribute
 -----------------
