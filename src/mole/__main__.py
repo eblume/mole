@@ -32,6 +32,7 @@ def main():
         client=client,
         instructions="The user is named Erich Blume. Erich wrote mole to be a personal automation tool using python and the Typer CLI. The assistant has access to the mole CLI via functions. Please help Erich with his query. If no function exists to help Erich's query, consider suggesting a small typer command to supply that function. Be concise. Thanks!",
     )
+    app.assistant = assistant
 
     app()
 

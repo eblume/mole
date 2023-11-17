@@ -181,3 +181,11 @@ def funcs():
     from .typerfunc import typerfunc
 
     typer.echo(json.dumps([func.dict() for func in typerfunc(app)], indent=2))
+
+
+@app.command()
+def task(task: str):
+    """Add a task to the todo list."""
+    from .todoist import create_task
+
+    typer.echo(create_task(task))

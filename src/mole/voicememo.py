@@ -9,7 +9,6 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from pydub import AudioSegment
 
 from .notebook import add_log
-from .assistant import make_assistant, make_thread, add_message, run_thread
 
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
@@ -91,11 +90,16 @@ def handle_vm(path: Path) -> None:
     # Record the transcription in nb-cli
     add_log(cleaned, subtitle="Voice Memo", when=when)
 
-    # Process the transcription through the assistant API
-    assistant = make_assistant()
-    thread = make_thread()
-    add_message(thread, cleaned)
-    run_thread(thread, assistant)
+    # Process the transcription through the assistant
+    from .cli import app
+
+    if not hasattr(app, "assistant"):
+        typer.echo("Assistant not configured, skipping assistant processing.")
+    else:
+        app.assistant.ask(
+            cleaned,
+            instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI. Most voice memos are meant as tasks for 'mole.task', but sometimes Erich wants to run other mole commands. Don't bother responding, he will not be shown your response, you can only execute commands. Thanks!",
+        )
 
     # TODO archive
     os.unlink(path)

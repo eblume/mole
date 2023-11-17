@@ -10,6 +10,8 @@ from openai import OpenAI
 from openai.types.beta.assistant import Assistant as RemoteAssistant
 from openai.types.beta.thread import Thread
 from openai.types.beta.threads.thread_message import ThreadMessage
+from rich import print
+from rich.panel import Panel
 
 
 # The number of times to poll for a run to complete before giving up
@@ -96,7 +98,7 @@ class Assistant:
             # TODO rethink this, delay making the assistant until we need it.
             self.assistant_id = self.make_assistant().id
 
-    def ask(self, query: str) -> str:
+    def ask(self, query: str, instructions: Optional[str] = None) -> str:
         """Ask the assistant a question, returning the response.
 
         This may block for the lifecycle of several API requests as well as waiting on remotely managed threads, in fact blocking for several minutes and then succeeding is not uncommon. The caller should make arrangements for multithreading, etc. should it be needed.
@@ -117,19 +119,33 @@ class Assistant:
         # The base assistant just returns an empty list but almost any real use case will extend this.
         yield from []
 
-    def do_function(self, name: str, **kwargs) -> Any:
+    def do_function(self, name: str, func_args: dict[str, Any]) -> str:
         """Execute the given function with the given arguments."""
         for command in self.functions():
             if command.name == name:
+                # TODO Make all console output optional and remove to seperate methods
+                # (Sorry if you're waiting on this)
+                print(f"Executing command {name} with args {func_args}")
+
                 # Capture stdout, print it, and add it to the result
                 with redirect_stdout(StringIO()) as buf:
-                    result = command.action(**kwargs)
+                    result = command.action(**func_args)
                 output = buf.getvalue()
                 if output:
-                    print(output)
-                    result = f"{output}\n{result}"
+                    print(
+                        Panel(
+                            output,
+                            border_style="dim",
+                            title="Command Output",
+                            title_align="left",
+                        )
+                    )
+                    result = f"{output}\n---^stdout---\n{result}\n---^return---"
+                else:
+                    # We string the result here just in case... I don't think it matters though.
+                    # TODO Think more about encapsulating command return values.
+                    result = str(result)
                 return result
-                result = command.action(**kwargs)
         raise ValueError(f"Command {name} not found")
 
     def thread(self) -> Thread:
@@ -182,10 +198,10 @@ class Assistant:
                             name = call.function.name
                             args = json.loads(call.function.arguments)
                             result = (
-                                self.do_function(name, **args) or "Success"
+                                self.do_function(name, args) or "Success"
                             )  # TODO better result handling... catch exceptions?
                             results.append({"tool_call_id": call.id, "output": result})
-                    # TODO: Consider NOT submitting results, and instead just pretty-print a command execution
+                    # TODO: Consider NOT submitting reslts, and instead just pretty-print a command execution
                     # explaination and then execute it. Update the prompt to inform the assistant that it won't get a
                     # chance to respond to the command, or something.
                     if results:
