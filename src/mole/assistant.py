@@ -185,6 +185,9 @@ class Assistant:
                                 self.do_function(name, **args) or "Success"
                             )  # TODO better result handling... catch exceptions?
                             results.append({"tool_call_id": call.id, "output": result})
+                    # TODO: Consider NOT submitting results, and instead just pretty-print a command execution
+                    # explaination and then execute it. Update the prompt to inform the assistant that it won't get a
+                    # chance to respond to the command, or something.
                     if results:
                         run = self.client.beta.threads.runs.submit_tool_outputs(
                             thread_id=thread.id, run_id=run.id, tool_outputs=results
