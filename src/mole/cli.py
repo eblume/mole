@@ -4,6 +4,7 @@ import sys
 import tempfile
 from typing import Optional
 import textwrap
+import json
 import subprocess
 from pathlib import Path
 
@@ -191,3 +192,11 @@ def ask(query: str):
         instructions="The agent is an interface to a python Typer CLI, for a program called 'mole'. The user is named Erich Blume. Erich wrote mole to be a personal automation assistance tool. Please help Erich with his query. If no function exists to help Erich's query, consider suggesting a small typer command to supply that function. Be concise. Thanks!",
     )
     typer.echo(assistant.ask(query))
+
+
+@app.command()
+def funcs():
+    """List all functions that mole can perform as a JSON object."""
+    from .typerfunc import typerfunc
+
+    typer.echo(json.dumps([func.dict() for func in typerfunc(app)], indent=2))
