@@ -33,7 +33,7 @@ def typerfunc(app: typer.Typer, command_prefix: str = None) -> list[FunctionSpec
         # Extract callback signature for parameters.
         params = []
         for param in command.params:
-            descr = param.help or command_info.callback.__doc__ or "No description available"
+            descr = param.help or "No description available"
 
             param_spec = ParameterSpec(
                 name=param.name,
@@ -65,14 +65,27 @@ class AppAssistant(Assistant):
 
     app: typer.Typer
     _: KW_ONLY
+    command_name: str = "ask"
     instructions: str = "The agent is an interface to a python Typer CLI. The tools available correspond to typer commands. Please help the user with their queries, executing CLI functions as needed. Be concise."
     name: Optional[str] = field(init=False, default=None)
 
     def __post_init__(self):
+        # In AppAssistant, we always infer the name
         self.name = self.app.info.name or sys.argv[0]
+        # Register the ask command
+        # TODO check name collision?
+        self.app.command(self.command_name)(self.ask_command)
         super().__post_init__()
 
     def functions(self) -> Iterable[FunctionSpec]:
         """Generate FunctionSpecs from the Typer app."""
         yield from super().functions()  # currently a non-op but may be useful to others
-        yield from typerfunc(self.app)
+        for func in typerfunc(self.app):
+            # Reject the ask_command
+            if func.name == f"{self.name}.{self.command_name}":
+                continue
+            yield func
+
+    def ask_command(self, query: str):
+        """Ask the assistant a question, with response printed to stdout."""
+        typer.echo(self.ask(query))

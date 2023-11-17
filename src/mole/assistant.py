@@ -2,7 +2,7 @@ import json
 from io import StringIO
 from contextlib import redirect_stdout
 import time
-from dataclasses import dataclass, KW_ONLY
+from dataclasses import dataclass, KW_ONLY, field
 from typing import Optional, Any, Callable
 from collections.abc import Iterable
 
@@ -80,8 +80,8 @@ class Assistant:
     subclassed to extend functionality.
     """
 
-    client: OpenAI
     _: KW_ONLY
+    client: OpenAI = field(default_factory=OpenAI)
     name: Optional[str] = None
     instructions: str = "Assist the user with their query. Be concise."
     replace: bool = False
@@ -93,6 +93,7 @@ class Assistant:
             self.name = self.__class__.__name__
 
         if self.replace or self.assistant_id is None:
+            # TODO rethink this, delay making the assistant until we need it.
             self.assistant_id = self.make_assistant().id
 
     def ask(self, query: str) -> str:
@@ -208,3 +209,7 @@ class Assistant:
             tools=[tool.dict() for tool in self.functions()],
             model="gpt-4-1106-preview",
         )
+
+    def delete_assistant(self):
+        """Delete the assistant from OpenAI."""
+        self.client.beta.assistants.delete(self.assistant_id)

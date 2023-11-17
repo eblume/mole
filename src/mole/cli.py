@@ -11,11 +11,9 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.table import Table
-from openai import OpenAI
 
 from .projects import app as project_app
 from .secrets import get_secret
-from .typerfunc import AppAssistant
 
 
 app = typer.Typer(
@@ -175,23 +173,6 @@ def svcrun(ctx: typer.Context):
     except Exception as e:
         typer.echo(f"🐭 Error: {e}")
         raise typer.Exit(1)
-
-
-@app.command()
-def ask(query: str):
-    """Ask mole to perform a task, using natural language.
-
-    This uses OpenAI's assistant API to convert your query in to a mole function call, and then executes that.
-    """
-    # (In the future I will use zonein/session/project/etc to tie this together to a thread context workflow)
-    client = OpenAI(api_key=get_secret("OpenAI", "credential", vault="blumeops"))
-    assistant = AppAssistant(
-        client,
-        app,
-        # replace=True,
-        instructions="The agent is an interface to a python Typer CLI, for a program called 'mole'. The user is named Erich Blume. Erich wrote mole to be a personal automation assistance tool. Please help Erich with his query. If no function exists to help Erich's query, consider suggesting a small typer command to supply that function. Be concise. Thanks!",
-    )
-    typer.echo(assistant.ask(query))
 
 
 @app.command()
