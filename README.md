@@ -47,11 +47,8 @@ are optional.
 
 How to Use
 ----------
-Mole is self-documenting and provides a natural language interface via a combination of [Typer](https://typer.tiangolo.com/) and [OpenAI](https://platform.openai.com/). You can simply execute `mole` with no arguments and a helpful message will be displayed.
-
-Furthermore, use `mole ask "What can you do?"` - indeed, you can ask for any help related to mole with `mole ask`, and
-if mole can do it, it will be done! This is accomplished using the OpenAI [Assistants API](https://platform.openai.com/docs/assistants/overview).
-
+Mole is self-documenting and provides a natural language interface via
+[TyperAssistant](https://github.come/eblume/TyperAssistant). Use `mole ask "What can you do?"` and if mole can do it, it will be done! This is accomplished using the OpenAI [Assistants API](https://platform.openai.com/docs/assistants/overview) and incurs function-calling charges.
 
 How to Develop
 --------------
