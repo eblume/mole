@@ -8,7 +8,7 @@ Mole is a Python Typer CLI, a program which helps my personal automation.
 For the most part, this repository is only intended to be directly helpful to myself, but sometimes I build things with
 mole that wind up being useful to other people.
 
-**mole changes rapidly with no warning and is not (yet) a candidate for stabile deployment.** Use at your own risk.
+**mole changes rapidly with no warning and is not (yet) a candidate for stable deployment.** Use at your own risk.
 
 
 How to Install
