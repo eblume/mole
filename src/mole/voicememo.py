@@ -1,15 +1,14 @@
-from pathlib import Path
+import os
 import subprocess
 import tempfile
-import os
+from pathlib import Path
 
-import typer
 import pendulum
-from watchdog.events import FileSystemEventHandler, FileSystemEvent
+import typer
 from pydub import AudioSegment
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
 from .notebook import add_log
-
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
 

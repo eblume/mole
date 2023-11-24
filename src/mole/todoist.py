@@ -1,7 +1,7 @@
-import requests
 import json
 import uuid
 
+import requests
 
 from .secrets import get_secret
 

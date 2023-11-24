@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
 import subprocess
-import typer
-from dataclasses import dataclass, asdict, InitVar, field
+from dataclasses import InitVar, asdict, dataclass, field
+from pathlib import Path
 
-from yaml import load, dump
+import typer
+from yaml import dump, load
 
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CDumper as Dumper
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader, Dumper
+    from yaml import Dumper, Loader
 
 
 app = typer.Typer(help="Manage projects", no_args_is_help=True)

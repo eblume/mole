@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
+import json
 import os
+import subprocess
 import sys
 import tempfile
-from typing import Optional
-import json
-import subprocess
+import textwrap
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
-import textwrap
 from rich.table import Table
 
 from .projects import app as project_app
 from .secrets import get_secret
-
 
 app = typer.Typer(
     name="mole",

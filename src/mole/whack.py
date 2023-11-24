@@ -1,12 +1,11 @@
-import subprocess
 import json
+import subprocess
 
 import typer
-from watchdog.observers import Observer
 from watchdog.events import FileCreatedEvent
+from watchdog.observers import Observer
 
 from .voicememo import VoiceMemoHandler, ensure_voicememo
-
 
 OBSERVER_JOIN_INTERVAL = 1  # seconds
 

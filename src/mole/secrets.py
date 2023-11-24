@@ -1,7 +1,6 @@
-from typing import Optional
 import re
-
 import subprocess
+from typing import Optional
 
 
 def get_secret(key: str, field: str, vault: Optional[str] = None, extra: Optional[list[str]] = None) -> str:
