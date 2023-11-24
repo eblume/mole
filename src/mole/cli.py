@@ -3,13 +3,13 @@ import os
 import sys
 import tempfile
 from typing import Optional
-import textwrap
 import json
 import subprocess
 from pathlib import Path
 
 import typer
 from rich.console import Console
+import textwrap
 from rich.table import Table
 
 from .projects import app as project_app
