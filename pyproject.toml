@@ -34,6 +34,8 @@ pdbpp = "^0.10.3"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+# Default select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "W", "I"]
 
 [tool.ruff.lint]
 ignore = [
