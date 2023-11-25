@@ -96,7 +96,7 @@ def log(
     add_log(entry_text, subtitle)
 
 
-app.add_typer(project_app, name="project")
+app.add_typer(project_app, name="projects")
 
 
 @app.command()
