@@ -1,21 +1,28 @@
 # -*- coding: utf-8 -*-
-import json
 import os
 import subprocess
 import sys
 import tempfile
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
+from typerassistant import TyperAssistant
 
 from .projects import app as project_app
 from .secrets import get_secret
 
-app = typer.Typer(
+
+@dataclass(init=False)
+class MoleCLI(typer.Typer):
+    assistant: TyperAssistant | None = None
+
+
+app = MoleCLI(
     name="mole",
     help="Mole is a tool for automating my life.",
     no_args_is_help=True,
@@ -172,14 +179,6 @@ def svcrun(ctx: typer.Context):
     except Exception as e:
         typer.echo(f"🐭 Error: {e}")
         raise typer.Exit(1)
-
-
-@app.command()
-def funcs():
-    """List all functions that mole can perform as a JSON object."""
-    from .typerfunc import typerfunc
-
-    typer.echo(json.dumps([func.dict() for func in typerfunc(app)], indent=2))
 
 
 @app.command()
