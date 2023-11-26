@@ -46,5 +46,6 @@ COMMON_KEYS = {
     "wpwhqn557rkb4ybpyvdxi5wsmu": {},
     "vg6xf6vvfmoh5hqjjhlhbeoaie": {
         "OpenAI": "5dam3u2wbiqjs4lfci5iln54n4",
+        "Todoist": "c53h3xnmswhvexa5mntoyvhgpm",
     },
 }

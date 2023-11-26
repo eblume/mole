@@ -32,7 +32,11 @@ def list():
 @app.command()
 def create(name: str):
     """Create a new project"""
-    Project.create(name)
+    try:
+        Project.create(name)
+    except ValueError as e:
+        print(e)
+        raise typer.Exit(1)
 
 
 @app.command()
