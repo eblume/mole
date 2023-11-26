@@ -73,35 +73,43 @@ def handle_vm(path: Path) -> None:
     # Re-encode the audio to 16000Hz wav
     audio = AudioSegment.from_file(str(path))
     audio_16khz = audio.set_frame_rate(16000)
-    wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    audio_16khz.export(wav.name, format="wav")
 
-    # Transcribe with whisper.cpp
-    # typer.echo(f"Transcribing {path}...")
-    transcription = (
-        subprocess.check_output(f"cd {WHISPER_CPP} && ./main -nt -f {wav.name} 2>/dev/null", shell=True)
-        .decode("utf-8")
-        .strip()
-    )
+    # If the audio is over 60 seconds, truncate it to 60 seconds.
+    # TODO this is a hack, we should really be using the streaming API for whisper.cpp (stream.cpp)
+    if len(audio_16khz) > 60 * 1000:
+        # This is necessary because occasionally my watch will start recording a voice memo that winds up being VERY
+        # long (I had one over 30 hours long once), which causes all kinds of ruckus. A better fix is needed.
+        typer.echo("Voice memo is over 60 seconds, truncating...")
+        audio_16khz = audio_16khz[: 60 * 1000]
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", mode="wb") as wav:
+        audio_16khz.export(wav.name, format="wav")
+        transcription = (
+            subprocess.check_output(f"cd {WHISPER_CPP} && ./main -nt -f {wav.name} 2>/dev/null", shell=True)
+            .decode("utf-8")
+            .strip()
+        )
     cleaned = "\n".join([line.strip() for line in transcription.split("\n") if line.strip()])
-    os.unlink(wav.name)
 
     # Record the transcription in nb-cli
     add_log(cleaned, subtitle="Voice Memo", when=when)
 
+    # Unlink the voice memo file now that it's logged -- this prevents costly infinite loops if the assistant fails,
+    # although it also means if the assistant fails there's no easy retry.
+    # TODO move all of this to some DAG like airflow or temporal.
+    # TODO archive audio and transcription
+    os.unlink(path)
+
     # Process the transcription through the assistant
     from .cli import app
 
-    if not hasattr(app, "assistant"):
+    if not hasattr(app, "assistant") or app.assistant is None:
         typer.echo("Assistant not configured, skipping assistant processing.")
     else:
         app.assistant.ask(
             cleaned,
-            instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI. Most voice memos are meant as tasks for 'mole.task', but sometimes Erich wants to run other mole commands. Don't bother responding, he will not be shown your response, you can only execute commands. Thanks!",
+            instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI. Most voice memos are meant as tasks for 'mole.task', but sometimes Erich wants to run other mole commands. Thanks!",
         )
-
-    # TODO archive
-    os.unlink(path)
 
 
 def ensure_voicememo() -> None:

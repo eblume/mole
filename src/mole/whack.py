@@ -36,7 +36,8 @@ def whack() -> None:
         observer.join()
 
 
-class WhackObserver(Observer):
+# TODO type correctly when fixed: https://github.com/gorakhargosh/watchdog/issues/982
+class WhackObserver(Observer):  # type: ignore
     """Specialized event observer for whack."""
 
     def __init__(self, *args, **kwargs):
