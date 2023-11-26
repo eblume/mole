@@ -106,10 +106,11 @@ def handle_vm(path: Path) -> None:
     if not hasattr(app, "assistant") or app.assistant is None:
         typer.echo("Assistant not configured, skipping assistant processing.")
     else:
-        app.assistant.ask(
+        response = app.assistant.ask(
             cleaned,
             instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI. Most voice memos are meant as tasks for 'mole.task', but sometimes Erich wants to run other mole commands. Thanks!",
         )
+        print("Assistant response:", response)
 
 
 def ensure_voicememo() -> None:
