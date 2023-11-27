@@ -5,7 +5,6 @@ import sys
 import tempfile
 import textwrap
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Optional
 
 import typer
@@ -100,31 +99,46 @@ app.add_typer(project_app, name="projects")
 
 
 @app.command()
-def zonein(task: str):
+def zonein(
+    task: Optional[str] = typer.Argument(None), project: Optional[str] = typer.Argument(None, envvar="MOLE_PROJECT")
+):
     """Zone in on a specific task.
 
-    For now, simply opens a zellij session named after the task.
+    When [MOLE_PROJECT] is set and no task is specified, the project name will be used as the task name.
+    (Future versions may include project task information for smarter decisionmaking.)
+
+    When [MOLE_PROJECT] is NOT set, 'task' must be specified.
+
+    If the task is a project, the zellij session will include the project logfile opened as a side pane.
     """
+    from .projects import Project, get_projects
+
+    projects = get_projects()
+
+    # First, set task and project_obj based on the arguments and environment
+    project_obj: Optional[Project] = None
+    if project is None:
+        if task is None:
+            typer.echo("🐭 Error: no task specified")
+            raise typer.Exit(1)
+        if task in projects:
+            project_obj = projects[task]
+    else:
+        # TODO be smarter here with project tasks
+        # Here we could build logic for workflows within projects
+        project_obj = projects.get(project, None)
+        if task is None:
+            if project not in projects:
+                typer.echo("🐭 Error: project not found")
+                raise typer.Exit(1)
+            task = project
+
     # For the session name, we want to strip out all non-alphanumeric characters and replace with dashes
     session_name = "".join([c if c.isalnum() else "-" for c in task.lower()])
     short = textwrap.shorten(session_name, width=20, placeholder="...")
 
-    # Find all existing project files in nb
-    projects = map(
-        Path, subprocess.check_output(["nb", "ls", "--type=project.md", "--paths", "--no-id"]).decode().splitlines()
-    )
-    # Map the session-format of the project name to the project file in nb
-    # (eg. "/Users/erichdblume/.nb/home/my_project.project.md" -> {"my-project": "my_project.project.md"})
-    # Collisions are entirely unhandled and will surely cause problems. (#TODO)
-    names = {
-        "".join([c if c.isalnum() else "-" for c in project.stem.split(".")[0].lower()]): project.name
-        for project in projects
-    }
-
     # If we know about this session as a project, open it like a project
-    if session_name in names:
-        project = names[session_name]
-
+    if project_obj is not None:
         # Make a layout file with tempfile
         # TODO won't this leak tempfiles? I don't really care, they are super small, but we should figure it out.
         with tempfile.NamedTemporaryFile(suffix="layout.kdl") as f:
@@ -141,7 +155,7 @@ def zonein(task: str):
                             pane size="60%"
                             pane {{
                                 command "nb"
-                                args "edit" "{project}"
+                                args "edit" "{project_obj.nb_logfile()}"
                             }}
                         }}
                     }}

@@ -213,6 +213,16 @@ class Project:
         print(f"Created project {name} file {file}")
         return file
 
+    def nb_logfile(self) -> Path:
+        """Return the path to the project's logfile, creating it if necessary."""
+        assert self.file is not None
+        logfile = self.file.parent / f"{self.file.stem}.md"
+        if not logfile.exists():
+            new_logfile = self.nb_add_file(self.name, "project.md", self.data.description or "")
+            assert new_logfile == logfile  # Sanity check to prevent infinite logfiles
+        assert logfile.exists()
+        return logfile
+
 
 def get_projects() -> dict[str, Project]:
     """Return a mapping of project names to their project by querying nb."""
