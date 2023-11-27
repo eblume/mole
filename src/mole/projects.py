@@ -6,11 +6,15 @@ import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import pendulum
 import typer
 import yaml
 from pydantic import BaseModel
+from rich import print
+from rich.panel import Panel
+from rich.prompt import Confirm
 
 try:
     from yaml import CDumper as Dumper
@@ -25,13 +29,18 @@ app = typer.Typer(help="Manage projects", no_args_is_help=True)
 @app.command()
 def list():
     """List all projects"""
-    for project in get_projects().values():
-        print(project.name)
+    for project_name in sorted(get_projects().keys(), reverse=True):
+        print(project_name)
 
 
 @app.command()
 def create(name: str):
     """Create a new project"""
+    projects = get_projects()
+    if name in projects:
+        print(f"Project {name} already exists")
+        raise typer.Exit(1)
+
     try:
         Project.create(name)
     except ValueError as e:
@@ -62,9 +71,46 @@ def edit(name: str):
     subprocess.run(["nb", "sync", "--no-color"])
 
 
+@app.command()
+def shell(name: Optional[str] = typer.Argument(default=None)):
+    """Open a shell with MOLE_PROJECT set to the given project.
+
+    If no project is given, fzf will prompt you for one. If the named project does not exist, you will be prompted to
+    confirm creating it.
+
+    The shell is opened with execvp, so it will replace this mole process.
+    """
+    projects = get_projects()
+    if not name:
+        name = (
+            subprocess.check_output(["fzf"], input="\n".join(sorted(projects.keys(), reverse=True)).encode())
+            .decode()
+            .strip()
+        )
+
+    if name not in projects:
+        if not Confirm.ask(f"Project {name} does not exist. Create it?"):
+            print("Quitting without creating project")
+            return
+        project = Project.create(name)
+    else:
+        project = projects[name]
+
+    os.environ["MOLE_PROJECT"] = project.name
+    print(
+        Panel.fit(
+            f'env[MOLE_PROJECT]="{project.name}"',
+            title=f"executing \"exec {os.environ['SHELL']}\" with:",
+            border_style="red dim",
+        )
+    )
+    # TODO is this the best way to re-exec with a new environment?
+    os.execvp(os.environ["SHELL"], [os.environ["SHELL"]])
+
+
 class ProjectData(BaseModel):
     created: datetime
-    description: str | None = None
+    description: Optional[str] = None
 
 
 @dataclass
@@ -78,7 +124,7 @@ class Project:
 
     name: str
     data: ProjectData
-    file: Path | None = field(init=False, default=None)
+    file: Optional[Path] = field(init=False, default=None)
 
     @classmethod
     def by_file(cls, file: Path) -> Project:
@@ -143,7 +189,7 @@ class Project:
             self.file = self.nb_add_file(self.name, "project.yaml", self.dump(title=False))
         subprocess.check_output(["nb", "sync", "--no-color"])
 
-    def nb_add_file(self, name: str, filetype: str, content: str | None) -> Path:
+    def nb_add_file(self, name: str, filetype: str, content: Optional[str] = None) -> Path:
         """Add a file to the notebook"""
         if content:
             output = subprocess.check_output(
