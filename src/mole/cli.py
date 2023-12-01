@@ -176,7 +176,7 @@ def zonein(
                 ).encode()
             )
             f.flush()
-            os.execvp("zellij", ["zellij", "--session", "short", "--layout", f.name])
+            os.execvp("zellij", ["zellij", "--session", project_obj.session_name, "--layout", f.name])
 
     # Finally, if all else fails, just launch zellij with a task name if possible
     if task:
