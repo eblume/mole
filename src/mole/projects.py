@@ -170,6 +170,13 @@ class Project:
         assert dummy.file is not None
         return Project.by_file(dummy.file)
 
+    @property
+    def session_name(self) -> str:
+        """Returns a session name for zellij"""
+        # Convert to lowercase, spaces to underscores, and strip non-alphanumeric characters
+        no_spaces = self.name.lower().replace(" ", "_")
+        return "".join([c if c.isalnum() else "-" for c in no_spaces])
+
     def dump(self, title: bool = True) -> str:
         """Dump the project to a Markdown+YAML string, as expected by load()
 
