@@ -5,6 +5,7 @@ import sys
 import tempfile
 import textwrap
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 import typer
@@ -120,11 +121,12 @@ def zonein(
     if project is None:
         if task is None:
             command = ["fzf", "--prompt", "project: "]
-            command += ["--preview", "bat --style=header,grid --line-range=:10 {}/log.md"]
-            choices = "\n".join(projects.keys())
+            command += ["--preview", "nb show --print {}.project.yaml | bat --style=header,grid --line-range=:10"]
+            choices = "\n".join(p.file.name.split(".")[0] for p in projects.values() if p.file is not None)
             choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
-            project_obj = projects[choice]
-        if task in projects:
+            choice_file = subprocess.check_output(["nb", "show", "--path", choice + ".project.yaml"]).decode().strip()
+            project_obj = Project.by_file(Path(choice_file))
+        elif task in projects:
             project_obj = projects[task]
     else:
         # TODO be smarter here with project tasks
@@ -139,7 +141,10 @@ def zonein(
     # If we know about this session as a project, open it like a project
     if project_obj is not None:
         # Try and resume, if possible. (We can't use zellij attach --create because it won't let us apply a layout)
-        if project_obj.session_name in subprocess.check_output(["zellij", "ls", "--short"]).decode().splitlines():
+        if (
+            project_obj.session_name
+            in subprocess.run(["zellij", "ls", "--short"], capture_output=True).stdout.decode().splitlines()
+        ):
             # force-run-commands is necessary to skip the "press enter to run commands" prompt, BUT, if layout commands
             # are not idempotent, this means attaching to a session will mutate state. For now, let's just assume that
             # layouts are idempotent. (It does mean that this layout engine is an attack vector, but frankly if you're
