@@ -5,7 +5,6 @@ import sys
 import tempfile
 import textwrap
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Optional
 
 import typer
@@ -120,13 +119,15 @@ def zonein(
     project_obj: Optional[Project] = None
     if project is None:
         if task is None:
+            mole_cmd = "mole"
+            if sys.argv[0].endswith("__main__.py"):
+                mole_cmd = f"{sys.executable} -m mole"
             command = ["fzf", "--prompt", "project: "]
-            # TODO fix
-            # command += ["--preview", "nb show --print {}.project.yaml | bat --style=header,grid --line-range=:10"]
+            command += ["--preview", mole_cmd + " projects show --color=always {}"]
+            # TODO change the above to use sys.argv and sys.executable to cover all the bases
             choices = "\n".join(projects.keys())
             choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
-            choice_file = subprocess.check_output(["nb", "show", "--path", choice + ".project.yaml"]).decode().strip()
-            project_obj = Project.by_file(Path(choice_file))
+            project_obj = projects[choice]
         elif task in projects:
             project_obj = projects[task]
     else:

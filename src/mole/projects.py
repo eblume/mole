@@ -5,6 +5,7 @@ import re
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +22,12 @@ try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Dumper, Loader
+
+
+class BatColorChoice(str, Enum):
+    always = "always"
+    never = "never"
+    auto = "auto"
 
 
 app = typer.Typer(help="Manage projects", no_args_is_help=True)
@@ -49,7 +56,7 @@ def create(name: str):
 
 
 @app.command()
-def show(name: str):
+def show(name: str, color: BatColorChoice = BatColorChoice.auto):
     """Show a project using bat.
 
     This will pretty-print the project when done 'bare', but if you pipe it in to another program (like `yq`), it will
@@ -59,7 +66,7 @@ def show(name: str):
     assert project.file is not None
     # NB has a 'show' command this was intended for, but perplexingly it doesn't auto-detect tty and instead relies on a
     # --print/-p flag to print the file contents. So we just use bat directly, which does all this for us.
-    os.execvp("bat", ["bat", project.file])
+    os.execvp("bat", ["bat", f"--color={color.value}", project.file])
 
 
 @app.command()
