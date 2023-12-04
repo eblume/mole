@@ -103,14 +103,14 @@ app.add_typer(project_app, name="projects")
 def zonein(
     task: Optional[str] = typer.Argument(None), project: Optional[str] = typer.Argument(None, envvar="MOLE_PROJECT")
 ):
-    """Zone in on a specific task.
+    """Focus on a specific task, launching (or resuming) a zellij session.
 
-    When [MOLE_PROJECT] is set and no task is specified, the project name will be used as the task name.
-    (Future versions may include project task information for smarter decisionmaking.)
+    The `task` parameter itself is strictly optional, although future versions may use this to provide more context. If
+    no task is specified, the current project name is used. If no project is specified, a list of projects is provided
+    to choose from. If you want to start a new project, use `mole projects create` instead.
 
-    When [MOLE_PROJECT] is NOT set, 'task' must be specified.
-
-    If the task is a project, the zellij session will include the project logfile opened as a side pane.
+    If MOLE_PROJECT was not set but the task was and the task is a project name, that project will be loaded in the
+    MOLE_PROJECT environment variable for the subprocess shell.
     """
     from .projects import Project, get_projects
 
@@ -121,8 +121,9 @@ def zonein(
     if project is None:
         if task is None:
             command = ["fzf", "--prompt", "project: "]
-            command += ["--preview", "nb show --print {}.project.yaml | bat --style=header,grid --line-range=:10"]
-            choices = "\n".join(p.file.name.split(".")[0] for p in projects.values() if p.file is not None)
+            # TODO fix
+            # command += ["--preview", "nb show --print {}.project.yaml | bat --style=header,grid --line-range=:10"]
+            choices = "\n".join(projects.keys())
             choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
             choice_file = subprocess.check_output(["nb", "show", "--path", choice + ".project.yaml"]).decode().strip()
             project_obj = Project.by_file(Path(choice_file))
@@ -140,6 +141,7 @@ def zonein(
 
     # If we know about this session as a project, open it like a project
     if project_obj is not None:
+        os.environ["MOLE_PROJECT"] = project_obj.name
         # Try and resume, if possible. (We can't use zellij attach --create because it won't let us apply a layout)
         if (
             project_obj.session_name
