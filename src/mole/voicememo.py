@@ -106,11 +106,18 @@ def handle_vm(path: Path) -> None:
     if not hasattr(app, "assistant") or app.assistant is None:
         typer.echo("Assistant not configured, skipping assistant processing.")
     else:
-        response = app.assistant.ask(
-            cleaned,
-            instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI, but you should only use mole.task - if you need to do something else, use mole.task to ask Erich to do it. Your response is being logged but not shown to Erich, so mole.task is your main interface to interact with him. Some voice memos don't need any action, as they are also being recorded to the log already, which is sometimes all he wants. Thanks!",
-        )
-        print("Assistant response:", response)
+        # TODO Hack: TyperAssistant needs to evolve
+        old_prompt = app.assistant.prompt
+        try:
+            app.assistant.prompt = False
+            response = app.assistant.ask(
+                cleaned,
+                instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI, but you should only use mole.task - if you need to do something else, use mole.task to ask Erich to do it. Your response is being logged but not shown to Erich, so mole.task is your main interface to interact with him. Some voice memos don't need any action, as they are also being recorded to the log already, which is sometimes all he wants. Thanks!",
+            )
+            print("Assistant response:", response)
+        finally:
+            # TODO: Close hack
+            app.assistant.prompt = old_prompt
 
 
 def ensure_voicememo() -> None:
