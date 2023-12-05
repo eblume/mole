@@ -8,7 +8,7 @@ from pendulum import DateTime
 def add_log(entry: Optional[str], subtitle: Optional[str] = None, when: Optional[DateTime] = None) -> None:
     """Add an entry to the day's log."""
 
-    # We sync before and afrer each log. No, it doesn't really solve race conditions, but it does surface some of them
+    # We sync before and after each log. No, it doesn't really solve race conditions, but it does surface some of them
     # quicker. I think fixing this will be on par with just writing a notebook microservice instead.
     subprocess.check_output(["nb", "sync"])
 
