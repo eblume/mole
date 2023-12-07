@@ -169,7 +169,7 @@ def zonein(
         # Set up environment according to the project's metadata
         os.environ["MOLE_PROJECT"] = project_obj.name
         if project_obj.data.cwd is not None:
-            path = Path(project_obj.data.cwd)
+            path = Path(project_obj.data.cwd).expanduser()
             if not path.is_dir():
                 typer.echo(f"🐭 Warning: project cwd {project_obj.data.cwd} is not a directory, skipping")
             else:
