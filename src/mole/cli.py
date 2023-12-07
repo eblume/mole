@@ -173,7 +173,7 @@ def zonein(
             if not path.is_dir():
                 typer.echo(f"🐭 Warning: project cwd {project_obj.data.cwd} is not a directory, skipping")
             else:
-                os.chdir(project_obj.data.cwd)
+                os.chdir(path)
 
         # Try and resume, if possible. (We can't use zellij attach --create because it won't let us apply a layout)
         sessions = {
