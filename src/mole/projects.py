@@ -39,6 +39,7 @@ class ProjectData(BaseModel):
     created: Optional[datetime] = None
     description: Optional[str] = None
     log: Optional[int] = None
+    cwd: Optional[str] = None
 
 
 @dataclass(frozen=True)

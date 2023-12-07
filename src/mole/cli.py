@@ -5,6 +5,7 @@ import sys
 import tempfile
 import textwrap
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 import typer
@@ -165,12 +166,21 @@ def zonein(
 
     # If we know about this session as a project, open it like a project
     if project_obj is not None:
+        # Set up environment according to the project's metadata
         os.environ["MOLE_PROJECT"] = project_obj.name
+        if project_obj.data.cwd is not None:
+            path = Path(project_obj.data.cwd)
+            if not path.is_dir():
+                typer.echo(f"🐭 Warning: project cwd {project_obj.data.cwd} is not a directory, skipping")
+            else:
+                os.chdir(project_obj.data.cwd)
+
         # Try and resume, if possible. (We can't use zellij attach --create because it won't let us apply a layout)
-        if (
-            project_obj.session_name
-            in subprocess.run(["zellij", "ls", "--short"], capture_output=True).stdout.decode().splitlines()
-        ):
+        sessions = {
+            line.strip()
+            for line in subprocess.run(["zellij", "ls", "--short"], capture_output=True).stdout.decode().splitlines()
+        }
+        if project_obj.session_name in sessions:
             os.execvp("zellij", ["zellij", "attach", project_obj.session_name])
             # If I start seeing command prompts again, re-enable --force-run-commands like so:
             # os.execvp("zellij", ["zellij", "attach", project_obj.session_name, "--force-run-commands"])
