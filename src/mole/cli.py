@@ -95,24 +95,27 @@ def log(
 
         entry_text = "".join(sys.stdin.readlines())
 
+    # Pre-sync... not going to fix all the problems, but should help
+    subprocess.check_output(["nb", "sync"])
+
     if not project:
         add_log(entry_text, subtitle)
     else:
         # TODO unify notebooks and project logs, see mole.project.md around 4 Dec 2023
-        from .projects import get_projects
+        from .projects import Project
 
-        project_obj = get_projects()[project]
+        project_obj = Project.load(project)
 
         # Some of the following logic is copied from add_log, but this all needs to be refactored anyway
         when = DateTime.now()
         content = f"## {when.strftime('%A, %B %d, %Y (%H:%M)')} {subtitle or ''}\n\n{entry_text or ''}"
-        subprocess.check_output(["nb", "sync"])
-        logfile = project_obj.nb_logfile()
-        subprocess.check_output(["nb", "edit", logfile, "--content", content])
+        subprocess.check_output(["nb", "edit", str(project_obj.nb_logfile_id), "--content", content])
         if not entry_text:
             # (see comment in add_log)
-            subprocess.run(["nb", "open", logfile])
-        subprocess.check_output(["nb", "sync"])
+            subprocess.run(["nb", "open", str(project_obj.nb_logfile_id)])
+
+    # Post-sync. Required.
+    subprocess.check_output(["nb", "sync"])
 
 
 app.add_typer(project_app, name="projects")
@@ -131,11 +134,12 @@ def zonein(
     If MOLE_PROJECT was not set but the task was and the task is a project name, that project will be loaded in the
     MOLE_PROJECT environment variable for the subprocess shell.
     """
-    from .projects import Project, get_projects
+    from .projects import Project, project_names
 
-    projects = get_projects()
+    projects = project_names()
 
     # First, set task and project_obj based on the arguments and environment
+    # TODO this dance is because we want to support tasks within projects, so lets actually do that
     project_obj: Optional[Project] = None
     if project is None:
         if task is None:
@@ -145,20 +149,19 @@ def zonein(
             command = ["fzf", "--prompt", "project: "]
             command += ["--preview", mole_cmd + " projects show --color=always {}"]
             # TODO change the above to use sys.argv and sys.executable to cover all the bases
-            choices = "\n".join(projects.keys())
+            choices = "\n".join(projects)
             choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
-            project_obj = projects[choice]
+            project_obj = Project.load(choice)
         elif task in projects:
-            project_obj = projects[task]
+            project_obj = Project.load(task)
     else:
-        # TODO be smarter here with project tasks
-        # Here we could build logic for workflows within projects
-        project_obj = projects.get(project, None)
+        if project not in projects:
+            typer.echo("🐭 Error: project not found")
+            raise typer.Exit(1)
+        project_obj = Project.load(project)
         if task is None:
-            if project not in projects:
-                typer.echo("🐭 Error: project not found")
-                raise typer.Exit(1)
             task = project
+    # Now, task is definitely set, and project_obj is set if we know about this project
 
     # If we know about this session as a project, open it like a project
     if project_obj is not None:
@@ -168,11 +171,10 @@ def zonein(
             project_obj.session_name
             in subprocess.run(["zellij", "ls", "--short"], capture_output=True).stdout.decode().splitlines()
         ):
-            # force-run-commands is necessary to skip the "press enter to run commands" prompt, BUT, if layout commands
-            # are not idempotent, this means attaching to a session will mutate state. For now, let's just assume that
-            # layouts are idempotent. (It does mean that this layout engine is an attack vector, but frankly if you're
-            # able to modify mole at runtime, you've already 'won', I think.)
-            os.execvp("zellij", ["zellij", "attach", project_obj.session_name, "--force-run-commands"])
+            os.execvp("zellij", ["zellij", "attach", project_obj.session_name])
+            # If I start seeing command prompts again, re-enable --force-run-commands like so:
+            # os.execvp("zellij", ["zellij", "attach", project_obj.session_name, "--force-run-commands"])
+            # TODO delete this when its clear its not happening without serialization
 
         # Make a layout file with tempfile.
         # TODO use zellij's layout directory system and couple it with project metadata and let projects specify
