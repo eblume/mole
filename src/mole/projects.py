@@ -40,6 +40,7 @@ class ProjectData(BaseModel):
     description: Optional[str] = None
     log: Optional[int] = None
     cwd: Optional[str] = None
+    poetry: Optional[bool] = None
 
 
 @dataclass(frozen=True)

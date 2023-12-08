@@ -186,6 +186,13 @@ def zonein(
             # os.execvp("zellij", ["zellij", "attach", project_obj.session_name, "--force-run-commands"])
             # TODO delete this when its clear its not happening without serialization
 
+        main_command = ""
+        if project_obj.data.poetry is not None:
+            if project_obj.data.cwd is None:
+                # This could mean something eventually, but for now is an error
+                raise ValueError("poetry is set but cwd is not")
+            main_command = 'command="poetry shell"'
+
         # Make a layout file with tempfile.
         # TODO use zellij's layout directory system and couple it with project metadata and let projects specify
         # per-project layouts automatically. Zellij layout is REALLY POWERFUL, especially with custom plugins, it can be
@@ -203,7 +210,7 @@ def zonein(
                             plugin location="zellij:tab-bar"
                         }}
                         pane split_direction="vertical" {{
-                            pane size="60%"
+                            pane {main_command} size="60%"
                             pane {{
                                 command "mole"
                                 args "log"
