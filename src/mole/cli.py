@@ -211,8 +211,8 @@ def zonein(
                         }}
                         pane split_direction="vertical" {{
                             pane {{
-                                {("command " + main_command[0]) if main_command else ""}
-                                {("args " + " ".join(main_command[1:])) if main_command else ""}
+                                {('command "' + main_command[0] + '"') if main_command else ""}
+                                {('args "' + " ".join(main_command[1:]) + '"') if main_command[1:] else ""}
                                 size "60%"
                             }}
 
