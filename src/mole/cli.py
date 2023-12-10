@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -14,6 +13,7 @@ from rich.console import Console
 from rich.table import Table
 from typerassistant import TyperAssistant
 
+from .projects import Project, ProjectTarget
 from .projects import app as project_app
 from .secrets import get_secret
 
@@ -123,118 +123,30 @@ app.add_typer(project_app, name="projects")
 
 
 @app.command()
-def zonein(
-    task: Optional[str] = typer.Argument(None), project: Optional[str] = typer.Argument(None, envvar="MOLE_PROJECT")
-):
-    """Focus on a specific task, launching (or resuming) a zellij session.
-
-    The `task` parameter itself is strictly optional, although future versions may use this to provide more context. If
-    no task is specified, the current project name is used. If no project is specified, a list of projects is provided
-    to choose from. If you want to start a new project, use `mole projects create` instead.
-
-    If MOLE_PROJECT was not set but the task was and the task is a project name, that project will be loaded in the
-    MOLE_PROJECT environment variable for the subprocess shell.
-    """
-    from .projects import Project, project_names
-
-    projects = project_names()
-
-    # First, set task and project_obj based on the arguments and environment
-    # TODO this dance is because we want to support tasks within projects, so lets actually do that
-    project_obj: Optional[Project] = None
+def zonein(project: ProjectTarget = None):
+    """Focus on a specific project, launching (or resuming) a zellij session."""
     if project is None:
-        if task is None:
-            mole_cmd = "mole"
-            if sys.argv[0].endswith("__main__.py"):
-                mole_cmd = f"{sys.executable} -m mole"
-            command = ["fzf", "--prompt", "project: "]
-            command += ["--preview", mole_cmd + " projects show --color=always {}"]
-            # TODO change the above to use sys.argv and sys.executable to cover all the bases
-            choices = "\n".join(projects)
-            choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
-            project_obj = Project.load(choice)
-        elif task in projects:
-            project_obj = Project.load(task)
-    else:
-        if project not in projects:
-            typer.echo("🐭 Error: project not found")
+        project = Project.from_fzf()
+
+    os.environ["MOLE_PROJECT"] = project.name
+
+    if project.data.cwd:
+        path = Path(project.data.cwd).expanduser()
+        if path.is_dir():
+            os.chdir(path)
+        else:
+            print(f"🐭 Error: cwd {path} does not exist")
             raise typer.Exit(1)
-        project_obj = Project.load(project)
-        if task is None:
-            task = project
-    # Now, task is definitely set, and project_obj is set if we know about this project
 
-    # If we know about this session as a project, open it like a project
-    if project_obj is not None:
-        # Set up environment according to the project's metadata
-        os.environ["MOLE_PROJECT"] = project_obj.name
-        if project_obj.data.cwd is not None:
-            path = Path(project_obj.data.cwd).expanduser()
-            if not path.is_dir():
-                typer.echo(f"🐭 Warning: project cwd {project_obj.data.cwd} is not a directory, skipping")
-            else:
-                os.chdir(path)
-
-        # Try and resume, if possible. (We can't use zellij attach --create because it won't let us apply a layout)
-        sessions = {
-            line.strip()
-            for line in subprocess.run(["zellij", "ls", "--short"], capture_output=True).stdout.decode().splitlines()
-        }
-        if project_obj.session_name in sessions:
-            os.execvp("zellij", ["zellij", "attach", project_obj.session_name])
-            # If I start seeing command prompts again, re-enable --force-run-commands like so:
-            # os.execvp("zellij", ["zellij", "attach", project_obj.session_name, "--force-run-commands"])
-            # TODO delete this when its clear its not happening without serialization
-
-        main_command = []
-        if project_obj.data.poetry is not None:
-            if project_obj.data.cwd is None:
-                # This could mean something eventually, but for now is an error
-                raise ValueError("poetry is set but cwd is not")
-            main_command = ["poetry", "shell"]
-
-        # Make a layout file with tempfile.
-        # TODO use zellij's layout directory system and couple it with project metadata and let projects specify
-        # per-project layouts automatically. Zellij layout is REALLY POWERFUL, especially with custom plugins, it can be
-        # so much more than just a terminal multiplexer. What follows is just a mere taste of what's possible.
-        with tempfile.NamedTemporaryFile(suffix="layout.kdl") as f:
-            f.write(
-                textwrap.dedent(
-                    f"""\
-                    // auto-generated layout file using mole zonenin command
-                    // generated by: {__file__}
-
-                    session_serialization false
-                    layout {{
-                        pane size=1 borderless=true {{
-                            plugin location="zellij:tab-bar"
-                        }}
-                        pane split_direction="vertical" {{
-                            pane {{
-                                {('command "' + main_command[0] + '"') if main_command else ""}
-                                {('args "' + " ".join(main_command[1:]) + '"') if main_command[1:] else ""}
-                                size "60%"
-                            }}
-
-                            pane {{
-                                command "mole"
-                                args "log"
-                            }}
-                        }}
-                        pane size=2 borderless=true {{
-                            plugin location="zellij:status-bar"
-                        }}
-                    }}
-                    """
-                ).encode()
-            )
+    try:
+        subprocess.run(["zellij", "attach", project.session_name], check=True)
+    except subprocess.CalledProcessError:
+        # No session exists, so create one
+        with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
+            f.write(project.zellij_layout)
             f.flush()
-            os.execvp("zellij", ["zellij", "--session", project_obj.session_name, "--layout", f.name])
-
-    # Finally, if all else fails, just launch zellij with a task name if possible
-    if task:
-        os.execvp("zellij", ["zellij", "--session", task])
-    os.execvp("zellij", ["zellij"])
+            os.execvp("zellij", ["zellij", "--session", project.session_name, "--layout", f.name])
+            # TODO does this leak temporary files?
 
 
 @app.command(

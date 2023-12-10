@@ -30,7 +30,18 @@ def get_secret(key: str, field: str, vault: Optional[str] = None, extra: Optiona
     if extra:
         command.extend(extra)
 
-    return subprocess.check_output(command).decode("utf-8").strip()
+    try:
+        output = subprocess.check_output(command, timeout=10).decode("utf-8").strip()
+    except subprocess.TimeoutExpired:
+        # Try one more time - sometimes the first request times out, but the second one works, I don't know why.
+        # This creates a problem though for the user, they only get 10s to enter their password the first time. But
+        # they'll get more time the second time, meanwhile users who got it right the first time won't have to see a
+        # failure message they didn't cause.
+        #
+        # I think this might have something to do with `nb sync` and the github ssh key agent, somehow? I don't know.
+        output = subprocess.check_output(command).decode("utf-8").strip()
+
+    return output
 
 
 ## No, these aren't actually secrets. They are just 1password key names and vault names converted to ids so that we can avoid doing name-id lookups. See the note in get_secret for more info.
