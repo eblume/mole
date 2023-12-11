@@ -68,16 +68,23 @@ class Project:
         if isinstance(ref, int):
             nb_id = ref
         else:
-            if isinstance(ref, Path):
-                output = subprocess.check_output(["nb", "ls", "--no-color", "--filenames", str(ref)]).decode().strip()
-            else:
-                output = (
-                    subprocess.check_output(
-                        ["nb", "search", "--no-color", "-l", "--type", "project.yaml", f"^# {ref}$"]
+            try:
+                if isinstance(ref, Path):
+                    output = (
+                        subprocess.check_output(["nb", "ls", "--no-color", "--filenames", str(ref)]).decode().strip()
                     )
-                    .decode()
-                    .strip()
-                )
+                else:
+                    output = (
+                        subprocess.check_output(
+                            ["nb", "search", "--no-color", "-l", "--type", "project.yaml", f"^# {ref}$"]
+                        )
+                        .decode()
+                        .strip()
+                    )
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 1:
+                    raise ValueError(f"Could not find project matching {ref}")
+                raise
             lines = output.splitlines()
             if len(lines) != 1:
                 raise RuntimeError(f"Found {len(lines)} projects matching {ref}")
@@ -241,7 +248,7 @@ class Project:
         return int(match.group(1))
 
 
-ProjectTarget = Annotated[
+ProjectOption = Annotated[
     Optional[Project], typer.Option("--project", "-p", envvar="MOLE_PROJECT", parser=Project.load)
 ]
 

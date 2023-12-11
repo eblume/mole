@@ -12,8 +12,9 @@ from pendulum import DateTime
 from rich.console import Console
 from rich.table import Table
 from typerassistant import TyperAssistant
+from typing_extensions import Annotated
 
-from .projects import Project, ProjectTarget
+from .projects import Project, ProjectOption
 from .projects import app as project_app
 from .secrets import get_secret
 
@@ -103,8 +104,6 @@ def log(
         add_log(entry_text, subtitle)
     else:
         # TODO unify notebooks and project logs, see mole.project.md around 4 Dec 2023
-        from .projects import Project
-
         project_obj = Project.load(project)
 
         # Some of the following logic is copied from add_log, but this all needs to be refactored anyway
@@ -123,9 +122,14 @@ app.add_typer(project_app, name="projects")
 
 
 @app.command()
-def zonein(project: ProjectTarget = None):
-    """Focus on a specific project, launching (or resuming) a zellij session."""
-    if project is None:
+def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="PROJECT")] = None):
+    """zonein to a project, setting the environment accordingly.
+
+    The project name is, as a convenience, joined with spaces, or you can specify it in one "quoted string". If no project name is given, you will be prompted by fzf to choose a project.
+    """
+    if project_name:
+        project = Project.load(" ".join(project_name))
+    else:
         project = Project.from_fzf()
 
     os.environ["MOLE_PROJECT"] = project.name
@@ -176,9 +180,33 @@ def svcrun(ctx: typer.Context):
         raise typer.Exit(1)
 
 
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def tasks(ctx: typer.Context, project: ProjectOption = None):
+    """Shortcut for `nb tasks <project_id> [COMMAND]...`
+
+    # To print all open tasks for the 'foo' project
+    MOLE_PROJECT="foo" mole tasks open
+
+    # To close the 4th task for the 'foo' project
+    MOLE_PROJECT="foo" mole tasks close 4
+
+    # To list all tasks
+    mole tasks
+    """
+    cmd = ["nb", "tasks"]
+    if project is not None:
+        cmd.append(str(project.nb_logfile_id))
+
+    if ctx.args:
+        cmd.extend(ctx.args)
+
+    os.execvp("nb", cmd)
+
+
 @app.command()
 def task(task: str):
-    """Add a task to the todo list."""
+    """Add a task to the todo list in todoist. Has no relation to 'tasks' command."""
+    # TODO rename this, it has nothing to do with tasks now! (See also voicememo.py prompt!)
     from .todoist import create_task
 
     typer.echo(create_task(task))

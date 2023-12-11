@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mole"
-version = "0.4.25"
+version = "0.4.26"
 description = "Personal automation project"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
 license = "MIT License"
@@ -33,7 +33,6 @@ mole = 'mole.__main__:main'
 pre-commit = "^3.0"
 ruff = "^0.1.1"
 ipdb = "^0.13.13"
-pdbpp = "^0.10.3"
 pyright = "^1.1.338"
 
 [tool.ruff]
