@@ -204,9 +204,8 @@ def tasks(ctx: typer.Context, project: ProjectOption = None):
 
 
 @app.command()
-def task(task: str):
+def todoist(task: str):
     """Add a task to the todo list in todoist. Has no relation to 'tasks' command."""
-    # TODO rename this, it has nothing to do with tasks now! (See also voicememo.py prompt!)
     from .todoist import create_task
 
     typer.echo(create_task(task))

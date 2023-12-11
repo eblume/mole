@@ -112,7 +112,7 @@ def handle_vm(path: Path) -> None:
             app.assistant.prompt = False
             response = app.assistant.ask(
                 cleaned,
-                instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI, but you should only use mole.task - if you need to do something else, use mole.task to ask Erich to do it. Your response is being logged but not shown to Erich, so mole.task is your main interface to interact with him. Some voice memos don't need any action, as they are also being recorded to the log already, which is sometimes all he wants. Thanks!",
+                instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI, but you should typically only use mole.todoist - if you need to do something else, use mole.todoist to make a task to ask Erich to do it. Your response is being logged but not shown to Erich, so mole.todoist is your main interface to interact with him. Some voice memos don't need any action, as they are also being recorded to the log already, which is sometimes all he wants. Thanks!",
             )
             print("Assistant response:", response)
         finally:
