@@ -62,7 +62,7 @@ $ poetry run pre-commit install
 
 This will install a number of pre-commit hooks in your local clone of this
 repository, which will ensure that you can't commit code that will break
-Funicular. (You can bypass this with `git commit --no-verify`, but please be
+this project. (You can bypass this with `git commit --no-verify`, but please be
 careful.)
 
 Please consult the [poetry](https://python-poetry.org/) docs for more information on how to develop in editable mode

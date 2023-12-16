@@ -34,6 +34,14 @@ class BatColorChoice(str, Enum):
 ProjectRef = Union[int, str, Path]
 
 
+class AssistantData(BaseModel):
+    """Data for the TyperAssistant for this project"""
+
+    id: Optional[str] = None
+    name: Optional[str] = None
+    thread_id: Optional[str] = None
+
+
 class ProjectData(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -42,6 +50,7 @@ class ProjectData(BaseModel):
     log: Optional[int] = None
     cwd: Optional[str] = None
     poetry: Optional[bool] = None
+    assistant: Optional[AssistantData] = None
 
 
 @dataclass(frozen=True)
