@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -19,13 +18,7 @@ from .projects import AssistantData, Project, ProjectOption
 from .projects import app as project_app
 from .secrets import get_secret
 
-
-@dataclass(init=False)
-class MoleCLI(typer.Typer):
-    assistant: TyperAssistant | None = None
-
-
-app = MoleCLI(
+app = typer.Typer(
     name="mole",
     help="Mole is a tool for automating my life.",
     no_args_is_help=True,
@@ -236,7 +229,7 @@ def ask(
     # Build or retrieve an assistant and thread
     if project and project.data.assistant:
         if project.data.assistant.id and not replace_assistant:
-            assistant = TyperAssistant.from_id(project.data.assistant.id, client)
+            assistant = TyperAssistant.from_id_with_app(project.data.assistant.id, app, client=client)
         else:
             # TODO support project.data.assistant.name in TyperAssistant
             assistant = TyperAssistant(app, client=client, replace=replace_assistant)

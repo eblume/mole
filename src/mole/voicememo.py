@@ -1,11 +1,15 @@
 import os
 import subprocess
 import tempfile
+from dataclasses import KW_ONLY, dataclass
 from pathlib import Path
+from typing import Iterable
 
 import pendulum
 import typer
 from pydub import AudioSegment
+from typerassistant import TyperAssistant
+from typerassistant.spec import FunctionSpec
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
 from .notebook import add_log
@@ -61,7 +65,7 @@ def handle_vm(path: Path) -> None:
     - Re-encode the audio to 16000Hz
     - Transcribe the audio using whisper.cpp
     - Extract tasks from the transcription using GPT-4
-    - Create tasks in Todoist
+    # - Create tasks in Todoist  # not currently implemented
     - Record the transcription in nb-cli and sync it.
 
     TODO:
@@ -100,24 +104,27 @@ def handle_vm(path: Path) -> None:
     # TODO archive audio and transcription
     os.unlink(path)
 
-    # Process the transcription through the assistant
+    # Extract tasks from the transcription using GPT-4 and create them in Todoist
+    # TODO this should become a new typerassistant API
+    # TODO also look in to preserving threads across VMs, etc.
     from .cli import app
 
-    if not hasattr(app, "assistant") or app.assistant is None:
-        typer.echo("Assistant not configured, skipping assistant processing.")
-    else:
-        # TODO Hack: TyperAssistant needs to evolve
-        old_prompt = app.assistant.prompt
-        try:
-            app.assistant.prompt = False
-            response = app.assistant.ask(
-                cleaned,
-                instructions="Please help the user, Erich Blume, with this transcribed voice memo. The mole functions you can access correspond to a python typer CLI, but you should typically only use mole.todoist - if you need to do something else, use mole.todoist to make a task to ask Erich to do it. Your response is being logged but not shown to Erich, so mole.todoist is your main interface to interact with him. Some voice memos don't need any action, as they are also being recorded to the log already, which is sometimes all he wants. Thanks!",
-            )
-            print("Assistant response:", response)
-        finally:
-            # TODO: Close hack
-            app.assistant.prompt = old_prompt
+    assistant = VoiceMemoAssistant(app)
+    print(assistant.ask(cleaned, use_commands=True, confirm_commands=False))
+
+
+@dataclass
+class VoiceMemoAssistant(TyperAssistant):
+    """An assistant for voice memos."""
+
+    _: KW_ONLY
+    name: str = "Mole VoiceMemo Assistant"
+    instructions: str = "Assistant scans voice memo transcriptions and, if applicable, creates todoist tasks from them."
+
+    def functions(self) -> Iterable[FunctionSpec]:
+        for function in super().functions():
+            if function.name.split(".")[-1] == "todoist":
+                yield function
 
 
 def ensure_voicememo() -> None:
