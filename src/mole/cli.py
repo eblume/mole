@@ -121,11 +121,35 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
 
     The project name is, as a convenience, joined with spaces, or you can specify it in one "quoted string". If no project name is given, you will be prompted by fzf to choose a project.
     """
+    zellij_session = os.environ.get("ZELLIJ_SESSION_NAME", None)
+    if zellij_session is not None:
+        print(f"🐭 Already in zellij session {zellij_session}, doing nothing")
+        print("(To change projects, detach with C-o d or exit with C-q and then run mole zonein again.)")
+        # You can also use C-o w to use the session manager, which means zellij is CAPABLE of switching sessions, but
+        # they don't expose that functionality to the CLI. See:
+        # - https://github.com/zellij-org/zellij/pull/2962
+        # - https://github.com/zellij-org/zellij/pull/2049
+        # This is going to require more work to get right, so for now we just exit.
+        return
+
     if project_name:
         project = Project.load(" ".join(project_name))
     else:
         project = Project.from_fzf()
 
+    # If the session exists, attach to it
+    try:
+        zellij_sessions = [
+            line.strip()
+            for line in subprocess.check_output(["zellij", "list-sessions", "-n", "-s"], text=True).splitlines()
+        ]
+    except subprocess.CalledProcessError:
+        zellij_sessions = []
+
+    if project.session_name in zellij_sessions:
+        os.execvp("zellij", ["zellij", "attach", project.session_name])
+
+    # The session doesn't exist and we aren't attached to anything so go ahead and create it and set the environment
     os.environ["MOLE_PROJECT"] = project.name
 
     if project.data.cwd:
@@ -136,15 +160,12 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
             print(f"🐭 Error: cwd {path} does not exist")
             raise typer.Exit(1)
 
-    try:
-        subprocess.run(["zellij", "attach", project.session_name], check=True)
-    except subprocess.CalledProcessError:
-        # No session exists, so create one
-        with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
-            f.write(project.zellij_layout)
-            f.flush()
+    with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
+        # TODO this leaks tempfiles like crazy
+        f.write(project.zellij_layout)
+        f.flush()
+        if zellij_session is None:
             os.execvp("zellij", ["zellij", "--session", project.session_name, "--layout", f.name])
-            # TODO does this leak temporary files?
 
 
 @app.command(
