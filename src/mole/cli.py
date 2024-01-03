@@ -18,6 +18,7 @@ from mole.notebook import Logbook
 from .projects import AssistantData, Project, ProjectOption
 from .projects import app as project_app
 from .secrets import get_secret
+from .tasks import app as tasks_app
 
 app = typer.Typer(
     name="mole",
@@ -102,6 +103,7 @@ def log(
 
 
 app.add_typer(project_app, name="projects")
+app.add_typer(tasks_app, name="tasks")
 
 
 @app.command()
@@ -128,7 +130,7 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
 
     # Print a log message
     logbook = Logbook(project)
-    logbook.append_log("")
+    logbook.append_log_header()
 
     # If the session exists, attach to it
     try:
@@ -161,8 +163,7 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
             subprocess.call(["zellij", "--session", project.session_name, "--layout", f.name])
 
     # Print a closing log message
-    ### TODO make this an h3?
-    logbook.append_log("", preamble="Closing session")
+    logbook.append_log_footer()
 
 
 @app.command(
@@ -190,29 +191,6 @@ def svcrun(ctx: typer.Context):
     except Exception as e:
         typer.echo(f"🐭 Error: {e}")
         raise typer.Exit(1)
-
-
-@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
-def tasks(ctx: typer.Context, project: ProjectOption = None):
-    """Shortcut for `nb tasks <project_id> [COMMAND]...`
-
-    # To print all open tasks for the 'foo' project
-    MOLE_PROJECT="foo" mole tasks open
-
-    # To close the 4th task for the 'foo' project
-    MOLE_PROJECT="foo" mole tasks close 4
-
-    # To list all tasks
-    mole tasks
-    """
-    cmd = ["nb", "tasks"]
-    if project is not None:
-        cmd.append(str(project.nb_logfile_id))
-
-    if ctx.args:
-        cmd.extend(ctx.args)
-
-    os.execvp("nb", cmd)
 
 
 @app.command()

@@ -46,6 +46,23 @@ class Logbook:
         subprocess.run(["nb", "edit", log_path, "--content", content], check=True)
         subprocess.run(["nb", "sync"])
 
+    def append_log_header(self, when: Optional[When] = None, preamble: Optional[str] = None):
+        """Like append_log, but just the header, and no sync"""
+        if when is None:
+            when = DateTime.now()
+        log_path = self.get_or_create_log(when)
+        header = self.make_header(when, preamble)
+        subprocess.run(["nb", "edit", log_path, "--content", header], check=True)
+
+    def append_log_footer(self, when: Optional[When] = None):
+        """Print an h3 closing header to the day's log and sync."""
+        if when is None:
+            when = DateTime.now()
+        log_path = self.get_or_create_log(when)
+        footer = "### Session End"
+        subprocess.run(["nb", "edit", log_path, "--content", footer], check=True)
+        subprocess.run(["nb", "sync"])
+
     def make_header(self, when: When, preamble: Optional[str]) -> str:
         """Return a markdown header for the given date or datetime."""
         # TODO it looks bad to have the full date on each entry but I can't untangle the datetime mess right now
