@@ -47,7 +47,7 @@ class ProjectData(BaseModel):
 
     created: Optional[datetime] = None
     description: Optional[str] = None
-    log: Optional[int] = None
+    log_dir: Optional[str] = None
     cwd: Optional[str] = None
     poetry: Optional[bool] = None
     assistant: Optional[AssistantData] = None
@@ -80,12 +80,14 @@ class Project:
             try:
                 if isinstance(ref, Path):
                     output = (
-                        subprocess.check_output(["nb", "ls", "--no-color", "--filenames", str(ref)]).decode().strip()
+                        subprocess.check_output(["nb", "ls", "home:", "--no-color", "--filenames", str(ref)])
+                        .decode()
+                        .strip()
                     )
                 else:
                     output = (
                         subprocess.check_output(
-                            ["nb", "search", "--no-color", "-l", "--type", "project.yaml", f"^# {ref}$"]
+                            ["nb", "search", "home:", "--no-color", "-l", "--type", "project.yaml", f"^# {ref}$"]
                         )
                         .decode()
                         .strip()
@@ -102,7 +104,7 @@ class Project:
                 raise RuntimeError(f"Could not parse output: {output}")
             nb_id = int(match.group(1))
 
-        record = subprocess.check_output(["nb", "show", "--no-color", "--print", str(nb_id)]).decode()
+        record = subprocess.check_output(["nb", "show", f"home:{nb_id}", "--no-color", "--print"]).decode()
         match = re.match(r"^# ([^\n]+)\n", record)
         if not match:
             raise RuntimeError(f"Could not parse output: {record}")
@@ -159,19 +161,12 @@ class Project:
         if self.nb_id == -1:
             raise RuntimeError("Cannot get file for dummy project")
         path = Path(
-            subprocess.check_output(["nb", "ls", "--no-color", "--paths", "--no-id", str(self.nb_id)]).decode().strip()
+            subprocess.check_output(["nb", "ls", f"home:{self.nb_id}", "--no-color", "--paths", "--no-id"])
+            .decode()
+            .strip()
         )
         assert path.exists()
         return path
-
-    @property
-    def nb_logfile_id(self) -> int:
-        """Return the path to the project's logfile, creating it if necessary."""
-        if self.data.log is None:
-            # Create the logfile
-            self.data.log = self.nb_add_file(self.name, "project.md", self.data.description or "")
-            self.write()  # also syncs
-        return self.data.log
 
     @property
     def zellij_layout(self) -> str:
@@ -242,12 +237,14 @@ class Project:
             # Sentinel: this is a dummy project, so we need to create it
             self.nb_add_file(self.name, "project.yaml", self.dump(title=False))
         else:
-            subprocess.check_output(["nb", "edit", "--overwrite", "--content", self.dump(title=True), str(self.nb_id)])
+            subprocess.check_output(
+                ["nb", "edit", f"home:{self.nb_id}", "--overwrite", "--content", self.dump(title=True)]
+            )
         subprocess.check_output(["nb", "sync"])
 
     def nb_add_file(self, name: str, filetype: str, content: Optional[str] = None) -> int:
         """Add a file to the notebook"""
-        command = ["nb", "add", "--no-color", f"--type={filetype}", "--title", name]
+        command = ["nb", "add", "home:", "--no-color", f"--type={filetype}", "--title", name]
         if content:
             command.extend(["--content", content])
         output = subprocess.check_output(command).decode()
@@ -264,7 +261,7 @@ ProjectOption = Annotated[
 
 def project_ids() -> set[int]:
     """Return a set of project ids by querying nb."""
-    output = subprocess.check_output(["nb", "ls", "--no-color", "--type=project.yaml"]).decode()
+    output = subprocess.check_output(["nb", "ls", "home:", "--no-color", "--type=project.yaml"]).decode()
     if not output:
         raise RuntimeError("Could not get projects, check `nb status`, there may be a git index issue.")
     if "0 project.yaml items" in output:
@@ -274,7 +271,9 @@ def project_ids() -> set[int]:
 
 def project_names() -> set[str]:
     """Return a set of project names by querying nb."""
-    output = subprocess.check_output(["nb", "ls", "--no-color", "--type=project.yaml", "--excerpt", "1"]).decode()
+    output = subprocess.check_output(
+        ["nb", "ls", "home:", "--no-color", "--type=project.yaml", "--excerpt", "1"]
+    ).decode()
     # The output is a series of 4-line groups, like this:
     # [1] Project file
     # ----------------
@@ -329,5 +328,5 @@ def show(name: str, color: BatColorChoice = BatColorChoice.auto):
 def edit(name: str):
     """Edit a project"""
     project = Project.load(name)
-    subprocess.run(["nb", "edit", project.file])
+    subprocess.run(["nb", "edit", f"home:{project.file}"])
     subprocess.run(["nb", "sync"])

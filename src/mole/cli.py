@@ -8,11 +8,12 @@ from typing import Optional
 
 import openai
 import typer
-from pendulum import DateTime
 from rich.console import Console
 from rich.table import Table
 from typerassistant import TyperAssistant
 from typing_extensions import Annotated
+
+from mole.notebook import Logbook
 
 from .projects import AssistantData, Project, ProjectOption
 from .projects import app as project_app
@@ -81,35 +82,23 @@ def log(
     project: Optional[str] = typer.Argument(None, envvar="MOLE_PROJECT"),
 ):
     """Add an entry to the daily log."""
-    from .notebook import add_log
+    if project is None:
+        logbook = Logbook(project=None)
+    else:
+        logbook = Logbook(Project.load(project))
 
     # Check if stdin has data
     if not sys.stdin.isatty():
         if entry_text:
             typer.echo("🐭 Error: stdin and entry_text are mutually exclusive")
             raise typer.Exit(1)
-
         entry_text = "".join(sys.stdin.readlines())
-
-    # Pre-sync... not going to fix all the problems, but should help
-    subprocess.check_output(["nb", "sync"])
-
-    if not project:
-        add_log(entry_text, subtitle)
+        logbook.append_log(entry_text, preamble=subtitle)
     else:
-        # TODO unify notebooks and project logs, see mole.project.md around 4 Dec 2023
-        project_obj = Project.load(project)
-
-        # Some of the following logic is copied from add_log, but this all needs to be refactored anyway
-        when = DateTime.now()
-        content = f"## {when.strftime('%A, %B %d, %Y (%H:%M)')} {subtitle or ''}\n\n{entry_text or ''}"
-        subprocess.check_output(["nb", "edit", str(project_obj.nb_logfile_id), "--content", content])
-        if not entry_text:
-            # (see comment in add_log)
-            subprocess.run(["nb", "open", str(project_obj.nb_logfile_id)])
-
-    # Post-sync. Required.
-    subprocess.check_output(["nb", "sync"])
+        if entry_text:
+            logbook.append_log(entry_text, preamble=subtitle or "")  # None signals to print no header
+        else:
+            logbook.edit_log(preamble=subtitle)
 
 
 app.add_typer(project_app, name="projects")
@@ -137,6 +126,10 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
     else:
         project = Project.from_fzf()
 
+    # Print a log message
+    logbook = Logbook(project)
+    logbook.append_log("")
+
     # If the session exists, attach to it
     try:
         zellij_sessions = [
@@ -147,25 +140,29 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
         zellij_sessions = []
 
     if project.session_name in zellij_sessions:
-        os.execvp("zellij", ["zellij", "attach", project.session_name])
+        # TODO this will probably not attach right, fix it
+        subprocess.call(["zellij", "attach", project.session_name])
+    else:
+        # The session doesn't exist and we aren't attached to anything so go ahead and create it and set the environment
+        os.environ["MOLE_PROJECT"] = project.name
 
-    # The session doesn't exist and we aren't attached to anything so go ahead and create it and set the environment
-    os.environ["MOLE_PROJECT"] = project.name
+        if project.data.cwd:
+            path = Path(project.data.cwd).expanduser()
+            if path.is_dir():
+                os.chdir(path)
+            else:
+                print(f"🐭 Error: cwd {path} does not exist")
+                raise typer.Exit(1)
 
-    if project.data.cwd:
-        path = Path(project.data.cwd).expanduser()
-        if path.is_dir():
-            os.chdir(path)
-        else:
-            print(f"🐭 Error: cwd {path} does not exist")
-            raise typer.Exit(1)
+        with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
+            # TODO this leaks tempfiles like crazy
+            f.write(project.zellij_layout)
+            f.flush()
+            subprocess.call(["zellij", "--session", project.session_name, "--layout", f.name])
 
-    with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
-        # TODO this leaks tempfiles like crazy
-        f.write(project.zellij_layout)
-        f.flush()
-        if zellij_session is None:
-            os.execvp("zellij", ["zellij", "--session", project.session_name, "--layout", f.name])
+    # Print a closing log message
+    ### TODO make this an h3?
+    logbook.append_log("", preamble="Closing session")
 
 
 @app.command(

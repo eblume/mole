@@ -24,7 +24,7 @@ pydub = "^0.25.1"
 requests = "^2.31.0"
 pyyaml = "^6.0.1"
 pydantic = "^2.5.2"
-pendulum = {version = "^3.0.0b1", allow-prereleases = true}  # See https://github.com/sdispater/pendulum/issues/600#issuecomment-1751221296
+pendulum = "^3.0"
 
 [tool.poetry.scripts]
 mole = 'mole.__main__:main'
