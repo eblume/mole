@@ -46,29 +46,34 @@ class Logbook:
         subprocess.run(["nb", "edit", log_path, "--content", content], check=True)
         subprocess.run(["nb", "sync"])
 
-    def append_log_header(self, when: Optional[When] = None, preamble: Optional[str] = None):
+    def append_log_header(self, when: Optional[DateTime] = None, preamble: Optional[str] = None):
         """Like append_log, but just the header, and no sync"""
         if when is None:
             when = DateTime.now()
         log_path = self.get_or_create_log(when)
-        header = self.make_header(when, preamble)
+        header = self.make_header(when, preamble, time_only=True)
         subprocess.run(["nb", "edit", log_path, "--content", header], check=True)
 
-    def append_log_footer(self, when: Optional[When] = None):
+    def append_log_footer(self, when: Optional[DateTime] = None):
         """Print an h3 closing header to the day's log and sync."""
         if when is None:
             when = DateTime.now()
         log_path = self.get_or_create_log(when)
-        footer = "### Session End"
+        footer = f"### {when.format('HH:mm')} Session closed"
         subprocess.run(["nb", "edit", log_path, "--content", footer], check=True)
         subprocess.run(["nb", "sync"])
 
-    def make_header(self, when: When, preamble: Optional[str]) -> str:
+    def make_header(self, when: When, preamble: Optional[str], time_only: bool = False) -> str:
         """Return a markdown header for the given date or datetime."""
         # TODO it looks bad to have the full date on each entry but I can't untangle the datetime mess right now
         if isinstance(when, DateTime):
-            header = f"## {when.format('dddd, MMMM Do, YYYY HH:mm')}"
+            if time_only:
+                header = f"## {when.format('HH:mm')}"
+            else:
+                header = f"## {when.format('dddd, MMMM Do, YYYY HH:mm')}"
         elif isinstance(when, Date):
+            if time_only:
+                raise ValueError("Cannot make time-only header for Date, pass DateTime instead")
             header = f"## {when.format('dddd, MMMM Do, YYYY')}"
         else:
             raise TypeError(f"Unexpected type {type(when)} for when")

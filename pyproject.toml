@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mole"
-version = "0.4.32"
+version = "0.5.0"
 description = "Personal automation project"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
 license = "MIT License"
@@ -25,6 +25,7 @@ requests = "^2.31.0"
 pyyaml = "^6.0.1"
 pydantic = "^2.5.2"
 pendulum = "^3.0"
+kdl-py = "^1.1.6"
 
 [tool.poetry.scripts]
 mole = 'mole.__main__:main'

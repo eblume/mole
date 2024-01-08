@@ -108,10 +108,8 @@ app.add_typer(tasks_app, name="tasks")
 
 @app.command()
 def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="PROJECT")] = None):
-    """zonein to a project, setting the environment accordingly.
+    """zone in to a project, setting the environment accordingly."""
 
-    The project name is, as a convenience, joined with spaces, or you can specify it in one "quoted string". If no project name is given, you will be prompted by fzf to choose a project.
-    """
     zellij_session = os.environ.get("ZELLIJ_SESSION_NAME", None)
     if zellij_session is not None:
         print(f"🐭 Already in zellij session {zellij_session}, doing nothing")
@@ -142,7 +140,6 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
         zellij_sessions = []
 
     if project.session_name in zellij_sessions:
-        # TODO this will probably not attach right, fix it
         subprocess.call(["zellij", "attach", project.session_name])
     else:
         # The session doesn't exist and we aren't attached to anything so go ahead and create it and set the environment
@@ -157,7 +154,6 @@ def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="
                 raise typer.Exit(1)
 
         with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
-            # TODO this leaks tempfiles like crazy
             f.write(project.zellij_layout)
             f.flush()
             subprocess.call(["zellij", "--session", project.session_name, "--layout", f.name])
