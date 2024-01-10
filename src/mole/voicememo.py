@@ -7,12 +7,14 @@ from typing import Iterable
 
 import pendulum
 import typer
+from openai import OpenAI
 from pydub import AudioSegment
 from typerassistant import TyperAssistant
 from typerassistant.spec import FunctionSpec
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
-from .notebook import add_log
+from mole.notebook import Logbook
+from mole.secrets import get_secret
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
 
@@ -95,8 +97,9 @@ def handle_vm(path: Path) -> None:
         )
     cleaned = "\n".join([line.strip() for line in transcription.split("\n") if line.strip()])
 
-    # Record the transcription in nb-cli
-    add_log(cleaned, subtitle="Voice Memo", when=when)
+    # Record the transcription in the daily journal
+    logbook = Logbook(project=None)
+    logbook.append_log(cleaned, preamble="JPR Memo", when=when)
 
     # Unlink the voice memo file now that it's logged -- this prevents costly infinite loops if the assistant fails,
     # although it also means if the assistant fails there's no easy retry.
@@ -109,7 +112,8 @@ def handle_vm(path: Path) -> None:
     # TODO also look in to preserving threads across VMs, etc.
     from .cli import app
 
-    assistant = VoiceMemoAssistant(app)
+    client = OpenAI(api_key=get_secret("OpenAI", "credential", vault="blumeops"))
+    assistant = VoiceMemoAssistant(app, client=client)
     print(assistant.ask(cleaned, use_commands=True, confirm_commands=False))
 
 
