@@ -1,6 +1,6 @@
 Mole
 =======================
-Copyright 2023 Erich Blume <blume.erich@gmail.com>
+Copyright 2024 Erich Blume <blume.erich@gmail.com>
 Provided under the MIT License. See LICENSE for more information.
 
 Mole is a Python Typer CLI, a program which helps my personal automation.
