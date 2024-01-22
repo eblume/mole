@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pendulum
 import typer
@@ -24,6 +24,10 @@ try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Dumper, Loader
+
+
+# Note that these names will be compared against Project.session_name.lower()
+FORBIDDEN_NAMES = ["none", "home"]
 
 
 class BatColorChoice(str, Enum):
@@ -137,6 +141,9 @@ class Project:
         if not re.match(r"^[a-zA-Z0-9_\- ]+$", name):
             raise ValueError(f"Project name {name} is invalid")
 
+        if name in FORBIDDEN_NAMES:
+            raise ValueError(f"Project name {name} is forbidden")
+
         if name in project_names():
             raise ValueError(f"Project {name} already exists")
 
@@ -175,6 +182,10 @@ class Project:
         shell = os.environ.get("SHELL", "bash")
         task_command = [shell, "-c", "mole tasks; exec $SHELL -i"]
         layout = Layout(config={"session_serialization": False})
+        if self.data.poetry:
+            main_pane = CommandPane(command=["poetry", "shell"], props=CommandPane.Props(size="60%", name="main"))
+        else:
+            main_pane = Pane(props=Pane.Props(size="60%", name="main"))
         layout.panes += [
             PluginPane(
                 location="zellij:tab-bar",
@@ -182,10 +193,7 @@ class Project:
             ),
             Pane(
                 panes=[
-                    CommandPane(
-                        command=["poetry", "shell"] if self.data.poetry else [],
-                        props=CommandPane.Props(size="60%", name="main"),
-                    ),
+                    main_pane,
                     Pane(
                         panes=[
                             CommandPane(
@@ -244,10 +252,71 @@ class Project:
             raise RuntimeError(f"Could not parse output: {output}")
         return int(match.group(1))
 
+    def list_todos(self) -> List[str]:
+        """List the labels of all the open todos in this project."""
+        command = ["nb", "todos", "--no-color", f"{self.session_name}:", "open"]
+        try:
+            output = subprocess.check_output(command).decode()
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 1:
+                return []
+            raise
+        return [line.strip() for line in output.splitlines()]
+
+
+@dataclass(frozen=True)
+class ToDo:
+    project: Project
+    todo: int
+
+    @classmethod
+    def from_fzf(cls, project: Project) -> Optional[ToDo]:
+        """Prompt the user to choose a TODO using fzf."""
+        command = [
+            "fzf",
+            "--prompt",
+            "Choose a TODO: ",
+            "--preview",
+            "nb show --color=always {}",
+        ]
+        choices = "None\n" + "\n".join(sorted(project.list_todos(), reverse=True))
+        choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
+        match = re.match(r"^\[(\w+):(\d+)\] .+$", choice)
+        if not match:
+            return None
+        if match.group(1) != project.session_name:
+            raise RuntimeError(f"TODO {choice} is not in project {project.name}")
+        return cls(project, int(match.group(2)))
+
+    @classmethod
+    def from_label(cls, label: str) -> ToDo:
+        """Parse a label into a ToDo"""
+        match = re.match(r"^((\w+):)?(\d+)$", label)
+        if not match:
+            raise ValueError(f"Could not parse label {label}")
+        project_name = match.group(2)
+        todo = int(match.group(3))
+        if project_name:
+            project = Project.load(project_name)
+        elif os.environ.get("MOLE_PROJECT"):
+            project = Project.load(os.environ["MOLE_PROJECT"])
+            project_name = project.session_name
+        else:
+            # While although we COULD assume a "home:" notebook in this case, this would mean we need to support ToDos
+            # that do not belong to a project, and at the moment we want to ensure this tight coupling of ToDos and
+            # Projects, so we raise an error instead.
+            raise ValueError(f"Could not parse label {label}: no project specified")
+        return cls(project, todo)
+
+    @property
+    def label(self) -> str:
+        return f"{self.project.session_name}:{self.todo}"
+
 
 ProjectOption = Annotated[
     Optional[Project], typer.Option("--project", "-p", envvar="MOLE_PROJECT", parser=Project.load)
 ]
+ToDoOption = Annotated[Optional[ToDo], typer.Option("--todo", "-t", envvar="MOLE_TODO", parser=ToDo.from_label)]
 
 
 def project_ids() -> set[int]:
@@ -280,6 +349,9 @@ def project_names() -> set[str]:
             raise RuntimeError(f"Duplicate project name: {match.group(2)} (one has id {match.group(1)})")
         found.add(match.group(2))
     return found
+
+
+## Typer app
 
 
 app = typer.Typer(help="Manage projects", no_args_is_help=True)

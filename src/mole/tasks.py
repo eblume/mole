@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from mole.notebook import Logbook
 
-from .projects import ProjectOption
+from .projects import ProjectOption, ToDoOption
 from .typer_command import forward
 
 app = typer.Typer(help="Manipulate tasks related to projects via nb-cli commands")
@@ -17,24 +17,24 @@ app = typer.Typer(help="Manipulate tasks related to projects via nb-cli commands
 def list_tasks(
     target: Annotated[Optional[str], typer.Argument()] = None,
     project: ProjectOption = None,
+    todo: ToDoOption = None,
     closed: Annotated[bool, typer.Option("--closed", "-c", is_flag=True, help="Show closed tasks")] = False,
     include_all: Annotated[bool, typer.Option("--all", "-a", is_flag=True, help="Show all tasks")] = False,
 ):
     """List tasks for the project or from the home notebook if no project is given.
 
-    If 'target' is specified, then --project and MOLE_PROJECT are ignored and the target is used directly in the nb command.
+    If 'target' is specified, then --project and --todo are ignored and the target is used directly in the nb command.
 
     Unlike the default nb behavior, only open tasks are shown by default. Use --closed to show closed tasks, and --all to show all tasks.
+
+    If --todo is specified, then only tasks in the given todo are shown.
     """
-    # The idea here is for the default behavior of `mole tasks` to show ALL open tasks for the current project, but to
-    # still support the selector syntax displayed by nb in this and followup commands. What makes this tricky is that
-    # `mole do` and `mole add` preferentially target the current day's log, so we need to support a common denominator
-    # of selector syntaxes that works equally well in both cases. This seems to be satisfied by requiring the
-    # two-argument "myproj:2 2" syntax for underlying calls but inferring the first argument from context
     cmd = ["nb", "tasks"]
 
     if target is not None:
         cmd.append(target)
+    elif todo is not None:
+        cmd.append(todo.label)
     elif project is not None:
         cmd.append(f"{project.session_name}:")
 
@@ -107,6 +107,7 @@ def tasks(
     ctx: typer.Context,
     target: Optional[str] = None,
     project: ProjectOption = None,
+    todo: ToDoOption = None,
     closed: Annotated[bool, typer.Option("--closed", "-c", is_flag=True, help="Show closed tasks")] = False,
     include_all: Annotated[bool, typer.Option("--all", "-a", is_flag=True, help="Show all tasks")] = False,
 ):
@@ -114,4 +115,4 @@ def tasks(
     # TODO: `mole tasks mole:` should show all tasks for the mole project but instead errors out
     # Workaround is to use the full form `mole tasks list mole:`
     if ctx.invoked_subcommand is None:
-        forward(app, list_tasks, target=target, project=project, closed=closed, include_all=include_all)
+        forward(app, list_tasks, target=target, project=project, todo=todo, closed=closed, include_all=include_all)

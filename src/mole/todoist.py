@@ -1,15 +1,16 @@
 import json
 import uuid
+from typing import Optional
 
 import requests
 
 from .secrets import get_secret
 
 
-def create_task(title: str) -> str:
+def create_task(title: str, due: Optional[str] = "today") -> str:
     """Create a new task in Todoist with the given title, returning a todoist:// url.
 
-    Task will be created as due today and will be left in the inbox.
+    Task will be created as due today by default and will be left in the inbox.
 
     Credentials are retrieved from 1password from the 'blumeops' vault.
     """
@@ -21,13 +22,11 @@ def create_task(title: str) -> str:
         "Content-Type": "application/json",
     }
 
-    json_data = json.dumps(
-        {
-            "content": title,
-            "due_string": "today",
-        }
-    )
+    document = {"content": title}
+    if due is not None:
+        document["due_string"] = due
 
+    json_data = json.dumps(document)
     response = requests.post("https://api.todoist.com/rest/v2/tasks", headers=headers, data=json_data)
     response.raise_for_status()
     url = response.json()["url"]

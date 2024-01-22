@@ -2,8 +2,6 @@
 import os
 import subprocess
 import sys
-import tempfile
-from pathlib import Path
 from typing import Optional
 
 import openai
@@ -11,14 +9,14 @@ import typer
 from rich.console import Console
 from rich.table import Table
 from typerassistant import TyperAssistant
-from typing_extensions import Annotated
 
-from mole.notebook import Logbook
-
-from .projects import AssistantData, Project, ProjectOption
+from .notebook import Logbook
+from .projects import AssistantData, Project, ProjectOption, ToDo
 from .projects import app as project_app
 from .secrets import get_secret
 from .tasks import app as tasks_app
+from .whack import whack
+from .zonein import zonein
 
 app = typer.Typer(
     name="mole",
@@ -64,29 +62,24 @@ def health():
 
 
 @app.command()
-def whack():
-    """Whack the mole. A long-lived watcher process.
-
-    This entrypoint spawns a long-lived watcher process that will react to certain events. It is intended to be run with
-    OP_SERVICE_ACCOUNT_TOKEN set for secret access, or else it will block on user acceptance for access (which is fine.)
-    """
-    # TODO unwrap this, I just can't test it right now
-    from .whack import whack
-
-    whack()
-
-
-@app.command()
 def log(
     entry_text: Optional[str] = typer.Argument(None),
     subtitle: Optional[str] = typer.Option(None, "--subtitle", "-s"),
     project: Optional[str] = typer.Argument(None, envvar="MOLE_PROJECT"),
+    todo: Optional[str] = typer.Argument(None, envvar="MOLE_TODO"),
 ):
-    """Add an entry to the daily log."""
+    """Add an entry to the daily log.
+
+    If project is specified, the log will be created in that projects' notebook. (A notebook will be created if one did not exist.)
+
+    If todo is further specified beyond project, then the log will instead be created as a subheading (h2) of that todo in the corresponding project. This overrides the project log destination.
+    """
     if project is None:
         logbook = Logbook(project=None)
+    elif todo is None:
+        logbook = Logbook(project=Project.load(project))
     else:
-        logbook = Logbook(Project.load(project))
+        logbook = Logbook(project=Project.load(project), todo=ToDo.from_label(todo))
 
     # Check if stdin has data
     if not sys.stdin.isatty():
@@ -99,67 +92,16 @@ def log(
         if entry_text:
             logbook.append_log(entry_text, preamble=subtitle or "")  # None signals to print no header
         else:
+            if todo is not None and subtitle is None:
+                # Special case for todos, where we always want to print a header as they are subheadings
+                subtitle = ""
             logbook.edit_log(preamble=subtitle)
 
 
 app.add_typer(project_app, name="projects")
 app.add_typer(tasks_app, name="tasks")
-
-
-@app.command()
-def zonein(project_name: Annotated[Optional[list[str]], typer.Argument(metavar="PROJECT")] = None):
-    """zone in to a project, setting the environment accordingly."""
-
-    zellij_session = os.environ.get("ZELLIJ_SESSION_NAME", None)
-    if zellij_session is not None:
-        print(f"🐭 Already in zellij session {zellij_session}, doing nothing")
-        print("(To change projects, detach with C-o d or exit with C-q and then run mole zonein again.)")
-        # You can also use C-o w to use the session manager, which means zellij is CAPABLE of switching sessions, but
-        # they don't expose that functionality to the CLI. See:
-        # - https://github.com/zellij-org/zellij/pull/2962
-        # - https://github.com/zellij-org/zellij/pull/2049
-        # This is going to require more work to get right, so for now we just exit.
-        return
-
-    if project_name:
-        project = Project.load(" ".join(project_name))
-    else:
-        project = Project.from_fzf()
-
-    # Print a log message
-    logbook = Logbook(project)
-    logbook.append_log_header()
-
-    # If the session exists, attach to it
-    try:
-        zellij_sessions = [
-            line.strip()
-            for line in subprocess.check_output(["zellij", "list-sessions", "-n", "-s"], text=True).splitlines()
-        ]
-    except subprocess.CalledProcessError:
-        zellij_sessions = []
-
-    if project.session_name in zellij_sessions:
-        subprocess.call(["zellij", "attach", project.session_name])
-    else:
-        # The session doesn't exist and we aren't attached to anything so go ahead and create it and set the environment
-        os.environ["MOLE_PROJECT"] = project.name
-
-        if project.data.cwd:
-            path = Path(project.data.cwd).expanduser()
-            if path.is_dir():
-                os.chdir(path)
-            else:
-                print(f"🐭 Error: cwd {path} does not exist")
-                raise typer.Exit(1)
-
-        with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
-            f.write(project.zellij_layout)
-            f.flush()
-            subprocess.call(["zellij", "--session", project.session_name, "--layout", f.name])
-
-    # Print a closing log message
-    logbook.append_log_footer()
+app.command()(zonein)
+app.command()(whack)
 
 
 @app.command(
@@ -181,6 +123,9 @@ def svcrun(ctx: typer.Context):
 
     env = os.environ.copy()
     env["OP_SERVICE_ACCOUNT_TOKEN"] = token
+
+    # Shouldn't this just be:
+    # os.execvpe(command[0], command, env=env)
 
     try:
         subprocess.run(command, env=env, check=True, capture_output=False)
