@@ -83,7 +83,7 @@ def undo_task(target: str, task: Annotated[Optional[str], typer.Argument()] = No
 @app.command("add")
 def add_task(
     entry: list[str],
-    target: Annotated[Optional[str], typer.Argument(help="Target notebook entry, eg. 'myproj:2'.")] = None,
+    target: Annotated[Optional[str], typer.Option(help="Target notebook entry, eg. 'myproj:2'.")] = None,
     project: ProjectOption = None,
 ):
     """Create a new task with the given entry text.
@@ -99,6 +99,22 @@ def add_task(
         cmd.append(todays_log)
     task_text = f"- [ ] {' '.join(entry)}"
     cmd = ["nb", "edit", target, "--content", task_text]
+    os.execvp("nb", cmd)
+
+
+@app.command("todo")
+def add_todo(
+    title: list[str],
+    project: ProjectOption = None,
+):
+    """Create a new ToDo with the given title.
+
+    If a project is specified, the todo is created in the project's todo notebook. Otherwise, the todo is created in the home notebook.
+    """
+    cmd = ["nb", "todo", "add"]
+    if project is not None:
+        cmd.append(f"{project.session_name}:")
+    cmd.extend(["--title", " ".join(title)])
     os.execvp("nb", cmd)
 
 
