@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -16,8 +17,6 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 from rich import print
 from typing_extensions import Annotated
-
-from .zellij import CommandPane, Layout, Pane, PluginPane
 
 try:
     from yaml import CDumper as Dumper
@@ -181,42 +180,68 @@ class Project:
         """Return the zellij layout for this project."""
         shell = os.environ.get("SHELL", "bash")
         task_command = [shell, "-c", "mole tasks; exec $SHELL -i"]
-        layout = Layout(config={"session_serialization": False})
         if self.data.poetry:
-            main_pane = CommandPane(command=["poetry", "shell"], props=CommandPane.Props(size="60%", name="main"))
+            main_pane = textwrap.dedent(
+                """\
+            pane {
+                command "poetry"
+                args "shell"
+            }
+            """
+            )
         else:
-            main_pane = Pane(props=Pane.Props(size="60%", name="main"))
-        layout.panes += [
-            PluginPane(
-                location="zellij:tab-bar",
-                props=PluginPane.Props(size=1, borderless=True),
-            ),
-            Pane(
-                panes=[
-                    main_pane,
-                    Pane(
-                        panes=[
-                            CommandPane(
-                                command=["mole", "log"],
-                                props=CommandPane.Props(name="log", focus=True),
-                            ),
-                            CommandPane(
-                                command=task_command,
-                                props=CommandPane.Props(name="tasks"),
-                            ),
-                        ],
-                        props=Pane.Props(stacked=True),
-                    ),
-                ],
-                props=Pane.Props(split_direction="vertical"),
-            ),
-            PluginPane(
-                location="zellij:status-bar",
-                props=PluginPane.Props(size=2, borderless=True),
-            ),
-        ]
+            main_pane = "pane"
 
-        return layout.dump()
+        layout = textwrap.dedent(
+            f"""\
+        layout {{
+                tab_template name="molebar" {{
+                        pane size=1 borderless=true {{
+                                plugin location="zellij:tab-bar"
+                        }}
+                        pane split_direction="vertical" {{
+                                pane size="60%" name="main" {{
+                                        children
+                                }}
+
+                                pane stacked=true name="molestack" {{
+                                        pane name="log" focus=true {{
+                                                command "mole"
+                                                args "log"
+                                        }}
+                                        pane name="tasks" {{
+                                                command "{task_command[0]}"
+                                                args { " ".join(f'"{arg}"' for arg in task_command[1:])}
+                                        }}
+                                }}
+                        }}
+
+                        pane size=2 borderless=true {{
+                                plugin location="zellij:status-bar"
+                        }}
+                }}
+
+                default_tab_template {{
+                        pane size=1 borderless=true {{
+                                plugin location="zellij:tab-bar"
+                        }}
+
+                        children
+
+                        pane size=2 borderless=true {{
+                                plugin location="zellij:status-bar"
+                        }}
+                }}
+
+                molebar name="Project: Mole" {{
+                    { main_pane }
+                }}
+        }}
+        session_serialization false
+        """
+        )
+
+        return layout
 
     def dump(self, title: bool = True) -> str:
         """Dump the project to a Markdown+YAML string, as expected by load()
