@@ -393,3 +393,10 @@ def edit(name: str):
     project = Project.load(name)
     subprocess.run(["nb", "edit", f"home:{project.file}"])
     subprocess.run(["nb", "sync"])
+
+
+@app.command()
+def layout(name: str):
+    """Print the zellij layout for a project"""
+    project = Project.load(name)
+    print(project.zellij_layout)
