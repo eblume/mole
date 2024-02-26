@@ -48,7 +48,7 @@ class Logbook:
             # Compared to normal file I/O this is extremely expensive, but it's not like we're doing this in a loop.
             subprocess.run(["nb", "edit", log_path, "--content", header], check=True)
         subprocess.run(["nb", "open", log_path], check=True)
-        subprocess.run(["nb", "sync"])
+        subprocess.run(["nb", "sync", "--all"])
 
     def append_log(self, entry: str, when: Optional[When] = None, preamble: Optional[str] = None):
         """Like edit_log, but instead of opening in $EDITOR, just append a new entry and sync. A header is always printed."""
@@ -58,7 +58,7 @@ class Logbook:
         header = self.make_header(when, preamble)
         content = f"{header}\n\n{entry}"
         subprocess.run(["nb", "edit", log_path, "--content", content], check=True)
-        subprocess.run(["nb", "sync"])
+        subprocess.run(["nb", "sync", "--all"])
 
     def append_log_header(self, when: Optional[DateTime] = None, preamble: Optional[str] = None):
         """Like append_log, but just the header, and no sync"""
@@ -75,7 +75,7 @@ class Logbook:
         log_path = self.get_or_create_log(when)
         footer = f"### {when.format('HH:mm')} Session closed"
         subprocess.run(["nb", "edit", log_path, "--content", footer], check=True)
-        subprocess.run(["nb", "sync"])
+        subprocess.run(["nb", "sync", "--all"])
 
     def make_header(self, when: When, preamble: Optional[str], time_only: bool = False) -> str:
         """Return a markdown header for the given date or datetime."""
