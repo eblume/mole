@@ -147,7 +147,10 @@ class Logbook:
         """
         if self.project is None:
             raise ValueError("Cannot get global notebook without a project")
-        notebooks = [line.strip() for line in subprocess.check_output(["nb", "notebooks"], text=True).splitlines()]
+        notebooks = [
+            line.strip()
+            for line in subprocess.check_output(["nb", "notebooks", "--names", "--no-color"], text=True).splitlines()
+        ]
         if self.project.session_name not in notebooks:
             subprocess.run(["nb", "notebooks", "add", self.project.session_name], check=True)
         return self.project.session_name
