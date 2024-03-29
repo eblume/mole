@@ -393,10 +393,11 @@ def list():
 def create(name: str):
     """Create a new project"""
     try:
-        Project.create(name)
+        project = Project.create(name)
     except ValueError as e:
         print(e)
         raise typer.Exit(1)
+    print(f"Created project {project.name} ({project.nb_id})")
 
 
 @app.command()
