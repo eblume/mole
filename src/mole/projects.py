@@ -55,6 +55,7 @@ class ProjectData(BaseModel):
     cwd: Optional[str] = None
     poetry: Optional[bool] = None
     assistant: Optional[AssistantData] = None
+    zellij_layout: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -178,6 +179,9 @@ class Project:
     @property
     def zellij_layout(self) -> str:
         """Return the zellij layout for this project."""
+        if self.data.zellij_layout is not None:
+            return self.data.zellij_layout
+
         shell = os.environ.get("SHELL", "bash")
         task_command = [shell, "-c", "mole tasks; exec $SHELL -i"]
         if self.data.poetry:
