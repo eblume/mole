@@ -4,14 +4,12 @@ import subprocess
 import sys
 from typing import Optional
 
-import openai
 import typer
 from rich.console import Console
 from rich.table import Table
-from typerassistant import TyperAssistant
 
 from .notebook import Logbook
-from .projects import AssistantData, Project, ProjectOption, ToDo
+from .projects import Project, ToDo
 from .projects import app as project_app
 from .secrets import get_secret
 from .tasks import app as tasks_app
@@ -140,47 +138,3 @@ def todoist(task: str):
     from .todoist import create_task
 
     typer.echo(create_task(task))
-
-
-@app.command(context_settings={"obj": {"omit_from_assistant": True}})
-def ask(
-    query: str,
-    project: ProjectOption = None,
-    replace_assistant: bool = False,
-    use_commands: bool = False,
-    confirm_commands: bool = True,
-):
-    """Ask a question of the OpenAI Assistant API, optionally delegating mole commands for you.
-
-    If a project is specified, the assistant will be scoped to that project. The project.data.assistant object will be
-    examined to construct the assistant, thread, and run objects for the conversation. If not specified, a generalized assistant will be created.
-
-    If replace_assistant is True, the assistant will be replaced before asking the question, remotely in the OpenAI Assistant API.
-
-    If use_commands is True, the assistant will be asked to execute the commands it generates. If False, any commands available to the model will be suppressed for this question.
-
-    If confirm_commands is True, the assistant will ask for confirmation before executing the commands it generates.
-    """
-    client = openai.OpenAI(api_key=get_secret("OpenAI", "credential", vault="blumeops"))
-
-    # Build or retrieve an assistant and thread
-    if project and project.data.assistant:
-        if project.data.assistant.id and not replace_assistant:
-            assistant = TyperAssistant.from_id_with_app(project.data.assistant.id, app, client=client)
-        else:
-            # TODO support project.data.assistant.name in TyperAssistant
-            assistant = TyperAssistant(app, client=client, replace=replace_assistant)
-        thread = assistant.thread(project.data.assistant.thread_id)
-    else:
-        assistant = TyperAssistant(app, client=client, replace=replace_assistant)
-        thread = assistant.thread()
-
-    # Ask the question on the thread (this is a 'run')
-    response = assistant.ask(query, thread=thread, use_commands=use_commands, confirm_commands=confirm_commands)
-    print(response)
-
-    # Update the project assistant data, if relevant
-    if project:
-        # TODO figure out what to do about overwriting the assistant name, etc.
-        project.data.assistant = AssistantData(id=assistant.assistant.id, thread_id=thread.id)
-        project.write()

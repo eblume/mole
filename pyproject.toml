@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mole"
-version = "0.6.8"
+version = "0.7.0"
 description = "Personal automation project"
 authors = ["Erich Blume <blume.erich@gmail.com>"]
 license = "MIT License"
@@ -11,9 +11,6 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-# Install my own packages using paths and develop=true, for ease of cross-package development
-# (If you're adapting this for your own project, you will want to convert these to PyPI dependencies)
-typerassistant = {path = "../TyperAssistant", develop = true}
 # Now back to the regular dependencies
 typer = {extras = ["all"], version = "^0.9"}
 todoist-api-python = "^2.1.3"

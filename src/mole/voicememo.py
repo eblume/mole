@@ -1,20 +1,13 @@
-import os
 import subprocess
 import tempfile
-from dataclasses import KW_ONLY, dataclass
 from pathlib import Path
-from typing import Iterable
 
 import pendulum
 import typer
-from openai import OpenAI
 from pydub import AudioSegment
-from typerassistant import TyperAssistant
-from typerassistant.spec import FunctionSpec
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
 from mole.notebook import Logbook
-from mole.secrets import get_secret
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
 
@@ -100,35 +93,8 @@ def handle_vm(path: Path) -> None:
     # Record the transcription in the daily journal
     logbook = Logbook(project=None)
     logbook.append_log(cleaned, preamble="JPR Memo", when=when)
-
-    # Unlink the voice memo file now that it's logged -- this prevents costly infinite loops if the assistant fails,
-    # although it also means if the assistant fails there's no easy retry.
-    # TODO move all of this to some DAG like airflow or temporal.
-    # TODO archive audio and transcription
-    os.unlink(path)
-
-    # Extract tasks from the transcription using GPT-4 and create them in Todoist
-    # TODO this should become a new typerassistant API
-    # TODO also look in to preserving threads across VMs, etc.
-    from .cli import app
-
-    client = OpenAI(api_key=get_secret("OpenAI", "credential", vault="blumeops"))
-    assistant = VoiceMemoAssistant(app, client=client)
-    print(assistant.ask(cleaned, use_commands=True, confirm_commands=False))
-
-
-@dataclass
-class VoiceMemoAssistant(TyperAssistant):
-    """An assistant for voice memos."""
-
-    _: KW_ONLY
-    name: str = "Mole VoiceMemo Assistant"
-    instructions: str = "Assistant scans voice memo transcriptions and, if applicable, creates todoist tasks from them."
-
-    def functions(self) -> Iterable[FunctionSpec]:
-        for function in super().functions():
-            if function.name.split(".")[-1] == "todoist":
-                yield function
+    # TODO create tasks in Todoist
+    return
 
 
 def ensure_voicememo() -> None:
