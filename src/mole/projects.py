@@ -237,7 +237,7 @@ class Project:
                         }}
                 }}
 
-                molebar name="Project: Mole" {{
+                molebar name="Project: { self.name }" {{
                     { main_pane }
                 }}
         }}
