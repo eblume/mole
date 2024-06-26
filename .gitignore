@@ -25,7 +25,6 @@ htmlcov
 *.mo
 
 .mypy_cache/*
-poetry.lock
 .hypothesis/*
 dist/*
 
