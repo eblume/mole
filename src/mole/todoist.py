@@ -27,7 +27,9 @@ def create_task(title: str, due: Optional[str] = "today") -> str:
         document["due_string"] = due
 
     json_data = json.dumps(document)
-    response = requests.post("https://api.todoist.com/rest/v2/tasks", headers=headers, data=json_data)
+    response = requests.post(
+        "https://api.todoist.com/rest/v2/tasks", headers=headers, data=json_data
+    )
     response.raise_for_status()
     url = response.json()["url"]
     return url.replace("https://todoist.com/showTask?", "todoist://task?")

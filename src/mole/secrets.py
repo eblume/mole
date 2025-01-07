@@ -3,7 +3,9 @@ import subprocess
 from typing import Optional
 
 
-def get_secret(key: str, field: str, vault: Optional[str] = None, extra: Optional[list[str]] = None) -> str:
+def get_secret(
+    key: str, field: str, vault: Optional[str] = None, extra: Optional[list[str]] = None
+) -> str:
     """Get a secret from 1password."""
     command = ["op", "item"]
     ## I've recently discovered that it incurs on the order of THOUSANDS of additional requests to 1password whenever I use a string-name for vault and key, which quickly exceeds the rate limit.
@@ -12,7 +14,9 @@ def get_secret(key: str, field: str, vault: Optional[str] = None, extra: Optiona
     # and use the id from there. If it's not in there, we COULD do something like warn the user and proceed, but it's
     # seriously killing my rate limit, so I'm just going to fail.
     if vault is None:
-        vault = VAULTS["Personal"]  # This is also the default behavior for op, but this makes the code nicer.
+        vault = VAULTS[
+            "Personal"
+        ]  # This is also the default behavior for op, but this makes the code nicer.
     else:
         if not re.match(r"^[0-9a-z]{26}$", vault):
             vault = VAULTS[vault]
@@ -24,9 +28,11 @@ def get_secret(key: str, field: str, vault: Optional[str] = None, extra: Optiona
         else:
             # See the note above; this is a recoverable failure I am choosing not to recover from.
             # Just use op item get to find the id and add it to COMMON_KEYS.
-            raise ValueError(f"Unable to look up key {key} in vault {vault} - use a UUID or add it to COMMON_KEYS")
+            raise ValueError(
+                f"Unable to look up key {key} in vault {vault} - use a UUID or add it to COMMON_KEYS"
+            )
 
-    command.extend(["get", key, "--fields", field])
+    command.extend(["get", key, "--fields", field, "--reveal"])
     if extra:
         command.extend(extra)
 

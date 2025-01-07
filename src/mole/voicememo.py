@@ -2,12 +2,11 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import pendulum
 import typer
 from pydub import AudioSegment
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
-from mole.notebook import Logbook
+from .todoist import create_task
 
 WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
 
@@ -15,7 +14,12 @@ WHISPER_CPP = Path.home() / "code" / "3rd" / "whisper.cpp"
 class VoiceMemoHandler(FileSystemEventHandler):
     """A handler for voice memo files."""
 
-    _path = Path.home() / "Library" / "Mobile Documents" / "iCloud~com~openplanetsoftware~just-press-record/Documents"
+    _path = (
+        Path.home()
+        / "Library"
+        / "Mobile Documents"
+        / "iCloud~com~openplanetsoftware~just-press-record/Documents"
+    )
     path = str(_path)
 
     def __init__(self, *args, **kwargs):
@@ -60,15 +64,11 @@ def handle_vm(path: Path) -> None:
     - Re-encode the audio to 16000Hz
     - Transcribe the audio using whisper.cpp
     - Extract tasks from the transcription using GPT-4
-    # - Create tasks in Todoist  # not currently implemented
-    - Record the transcription in nb-cli and sync it.
+    - Create tasks in Todoist  # not currently implemented
 
     TODO:
     - Archive the audio.
     """
-    # Example path: /Users/erichdblume/Library/Mobile Documents/iCloud~com~openplanetsoftware~just-press-record/Documents/2023-11-02/23-35-20.m4a
-    when = pendulum.local(*map(int, path.parent.name.split("-")), *map(int, path.stem.split("-")))
-
     # Re-encode the audio to 16000Hz wav
     audio = AudioSegment.from_file(str(path))
     audio_16khz = audio.set_frame_rate(16000)
@@ -84,16 +84,17 @@ def handle_vm(path: Path) -> None:
     with tempfile.NamedTemporaryFile(suffix=".wav", mode="wb") as wav:
         audio_16khz.export(wav.name, format="wav")
         transcription = (
-            subprocess.check_output(f"cd {WHISPER_CPP} && ./main -nt -f {wav.name} 2>/dev/null", shell=True)
+            subprocess.check_output(
+                f"cd {WHISPER_CPP} && ./build/bin/whisper-cli -nt -f {wav.name} 2>/dev/null",
+                shell=True,
+            )
             .decode("utf-8")
             .strip()
         )
-    cleaned = "\n".join([line.strip() for line in transcription.split("\n") if line.strip()])
-
-    # Record the transcription in the daily journal
-    logbook = Logbook(project=None)
-    logbook.append_log(cleaned, preamble="JPR Memo", when=when)
-    # TODO create tasks in Todoist
+    cleaned = "\n".join(
+        [line.strip() for line in transcription.split("\n") if line.strip()]
+    )
+    create_task(cleaned)
     return
 
 
@@ -146,10 +147,15 @@ def ensure_voicememo() -> None:
     # Now, check that whisper.cpp is installed
     if not WHISPER_CPP.exists():
         typer.echo("Installing whisper.cpp...")
-        subprocess.check_output(f"git clone git@github.com:ggerganov/whisper.cpp.git {WHISPER_CPP}", shell=True)
+        subprocess.check_output(
+            f"git clone git@github.com:ggerganov/whisper.cpp.git {WHISPER_CPP}",
+            shell=True,
+        )
 
     # Update it, because why not
     typer.echo("Updating whisper.cpp...")
     subprocess.check_output(f"cd {WHISPER_CPP} && git pull", shell=True)
-    subprocess.check_output(f"cd {WHISPER_CPP} && ./models/download-ggml-model.sh base.en", shell=True)
+    subprocess.check_output(
+        f"cd {WHISPER_CPP} && ./models/download-ggml-model.sh base.en", shell=True
+    )
     subprocess.check_output(f"cd {WHISPER_CPP} && make", shell=True)
