@@ -95,6 +95,9 @@ def handle_vm(path: Path) -> None:
         [line.strip() for line in transcription.split("\n") if line.strip()]
     )
     create_task(cleaned)
+
+    # Finally, unlink audio
+    path.unlink()
     return
 
 
