@@ -7,7 +7,7 @@ import requests
 from .secrets import get_secret
 
 
-def create_task(title: str, due: Optional[str] = "today") -> str:
+def create_task(title: str, due: Optional[str] = None) -> str:
     """Create a new task in Todoist with the given title, returning a todoist:// url.
 
     Task will be created as due today by default and will be left in the inbox.
