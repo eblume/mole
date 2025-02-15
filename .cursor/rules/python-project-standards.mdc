@@ -1,5 +1,21 @@
 ---
-description: 
-globs: 
+description: Python Project Standards
+globs: *.py,pyproject.toml
 ---
- 
+# Python Project Standards
+
+<rule>
+name: python_package_management
+description: Standards for Python package management using uv
+filters:
+  - type: file
+    pattern: "pyproject.toml"
+
+actions:
+  - type: suggest
+    message: |
+      When managing Python packages with uv:
+      - Use `uv add --dev {package}` for development dependencies
+      - Do not manually edit pyproject.toml for dependencies
+      - Do not use Poetry-specific configurations
+</rule>
