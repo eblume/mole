@@ -1,48 +1,14 @@
-[tool.poetry]
+[project]
 name = "mole"
-version = "0.8.1"
-description = "Personal automation project"
-authors = ["Erich Blume <blume.erich@gmail.com>"]
-license = "MIT License"
+version = "0.9.0"
+description = "Personal automation tool"
 readme = "README.md"
-packages = [
-    { "include" = "mole", "from" = "src"},
+requires-python = ">=3.9"
+dependencies = [
+    "pendulum>=3.0.0",
+    "requests>=2.32.3",
+    "rich>=13.9.4",
+    "todoist-api-python>=2.1.7",
+    "typer>=0.15.1",
+    "watchdog>=6.0.0",
 ]
-
-[tool.poetry.dependencies]
-python = "^3.11"
-# Now back to the regular dependencies
-typer = {extras = ["all"], version = "^0.12"}
-todoist-api-python = "^2.1.3"
-openai = "^1.2.4"
-rich = "^13.4.2"
-watchdog = ">=4.0.0"
-pydub = "^0.25.1"
-requests = "^2.31.0"
-pyyaml = "^6.0.1"
-pydantic = "^2.5.2"
-pendulum = "^3.0"
-
-[tool.poetry.scripts]
-mole = 'mole.__main__:main'
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.0"
-ruff = "^0.1.1"
-ipdb = "^0.13.13"
-pyright = "^1.1.338"
-
-[tool.ruff]
-line-length = 120
-target-version = "py311"
-# Default select = ["E4", "E7", "E9", "F"]
-select = ["E4", "E7", "E9", "F", "W", "I"]
-
-[tool.ruff.lint]
-ignore = [
-    "E501",  # line too long
-]
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
