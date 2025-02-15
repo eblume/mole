@@ -1,6 +1,6 @@
 ---
 description: Python Testing Standards
-globs: tests/*.py,
+globs: tests/*.py
 ---
 # Python Testing Standards
 
