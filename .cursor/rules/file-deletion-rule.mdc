@@ -1,0 +1,24 @@
+---
+description: Ensure that all references to a deleted file are removed from the codebase to prevent import errors.
+globs: *.py
+---
+# File Deletion Rule
+
+<rule>
+actions:
+  - type: suggest
+    message: |
+      File Deletion:
+      - When deleting a file, ensure all references to it are removed from the codebase.
+      - Conduct a thorough search for any lingering references in other files.
+
+examples:
+  - input: |
+      from .tasks import app as tasks_app
+    output: |
+      # No import statement
+
+metadata:
+  priority: medium
+  version: 1.0
+</rule>

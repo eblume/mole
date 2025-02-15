@@ -27,3 +27,6 @@ build-backend = "hatchling.build"
 dev = [
     "pytest>=8.3.4",
 ]
+
+[tool.uv]
+module-path = ["src"]

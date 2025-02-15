@@ -12,7 +12,6 @@ from .notebook import Logbook
 from .projects import Project, ToDo
 from .projects import app as project_app
 from .secrets import get_secret
-from .tasks import app as tasks_app
 from .whack import whack
 from .zonein import zonein
 
@@ -97,7 +96,6 @@ def log(
 
 
 app.add_typer(project_app, name="projects")
-app.add_typer(tasks_app, name="tasks")
 app.command()(zonein)
 app.command()(whack)
 

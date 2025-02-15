@@ -1,0 +1,28 @@
+---
+description: Ensure that all imports are necessary and relevant to the current functionality.
+globs: *.py
+---
+ # Import Management Rule
+
+<rule>
+actions:
+  - type: suggest
+    message: |
+      Import Management:
+      - Ensure all imports are necessary and relevant.
+      - Avoid importing unused modules or components.
+      - Use absolute imports for clarity, especially in test files.
+
+examples:
+  - input: |
+      import os
+      import sys
+      from .tasks import app as tasks_app
+    output: |
+      import os
+      import sys
+
+metadata:
+  priority: medium
+  version: 1.0
+</rule>

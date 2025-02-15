@@ -183,7 +183,7 @@ class Project:
             return self.data.zellij_layout
 
         shell = os.environ.get("SHELL", "bash")
-        task_command = [shell, "-c", "mole tasks; exec $SHELL -i"]
+        task_command = [shell, "-c", "exec $SHELL -i"]
         if self.data.poetry:
             main_pane = textwrap.dedent(
                 """\
