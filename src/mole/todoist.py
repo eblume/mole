@@ -18,7 +18,7 @@ def create_task(title: str, due: Optional[str] = None) -> str:
 
     headers = {
         "Authorization": f"Bearer {key}",
-        "X-Requerst-Id": str(uuid.uuid4()),
+        "X-Request-Id": str(uuid.uuid4()),
         "Content-Type": "application/json",
     }
 
