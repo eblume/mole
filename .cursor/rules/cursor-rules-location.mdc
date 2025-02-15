@@ -2,7 +2,6 @@
 description: Cursor Rules Location
 globs: *.mdc
 ---
----
 # Cursor Rules Location
 
 Rules for placing and organizing Cursor rule files in the repository.
