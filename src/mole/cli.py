@@ -36,7 +36,9 @@ def health():
     from .health import health_checks
 
     def _make_table():
-        table = Table(title="Health Checks", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="Health Checks", show_header=True, header_style="bold magenta"
+        )
         table.add_column("")
         table.add_column("Check")
         table.add_column("Status")
@@ -47,7 +49,11 @@ def health():
             count += 1
             if check.status.value == "success":
                 success += 1
-            table.add_row(check.status.emoji, f"[{check.status.color}]{check.name}[/]", check.message)
+            table.add_row(
+                check.status.emoji,
+                f"[{check.status.color}]{check.name}[/]",
+                check.message,
+            )
 
         table.add_section()
         table.add_row("", "[bold]Total[/]", f"{success}/{count} checks passed")
@@ -87,7 +93,9 @@ def log(
         logbook.append_log(entry_text, preamble=subtitle)
     else:
         if entry_text:
-            logbook.append_log(entry_text, preamble=subtitle or "")  # None signals to print no header
+            logbook.append_log(
+                entry_text, preamble=subtitle or ""
+            )  # None signals to print no header
         else:
             if todo is not None and subtitle is None:
                 # Special case for todos, where we always want to print a header as they are subheadings
@@ -115,7 +123,9 @@ def svcrun(ctx: typer.Context):
     )
     typer.echo("(If this hangs, you need to run again from a terminal with a GUI.)")
     token = get_secret("zukqtgtw5xt66k3z3il4hw366e", "credential", vault="blumeops")
-    typer.echo("Service account token loaded, the command will now run without interruption from 1password.")
+    typer.echo(
+        "Service account token loaded, the command will now run without interruption from 1password."
+    )
 
     env = os.environ.copy()
     env["OP_SERVICE_ACCOUNT_TOKEN"] = token

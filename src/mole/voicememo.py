@@ -1,9 +1,9 @@
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import typer
-from pydub import AudioSegment
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
 from .todoist import create_task
@@ -37,7 +37,7 @@ class VoiceMemoHandler(FileSystemEventHandler):
             case _:
                 pass  # We really only care about created events
 
-    def on_created(self, event: FileSystemEvent):
+    def on_created(self, event: Any):  # TODO: Tighten typing
         """Called when a file or directory is created."""
 
         if event.is_directory:
@@ -69,20 +69,23 @@ def handle_vm(path: Path) -> None:
     TODO:
     - Archive the audio.
     """
-    # Re-encode the audio to 16000Hz wav
-    audio = AudioSegment.from_file(str(path))
-    audio_16khz = audio.set_frame_rate(16000)
-
-    # If the audio is over 60 seconds, truncate it to 60 seconds.
-    # TODO this is a hack, we should really be using the streaming API for whisper.cpp (stream.cpp)
-    if len(audio_16khz) > 60 * 1000:
-        # This is necessary because occasionally my watch will start recording a voice memo that winds up being VERY
-        # long (I had one over 30 hours long once), which causes all kinds of ruckus. A better fix is needed.
-        typer.echo("Voice memo is over 60 seconds, truncating...")
-        audio_16khz = audio_16khz[: 60 * 1000]
-
+    # Re-encode the audio to 16000Hz wav using ffmpeg
     with tempfile.NamedTemporaryFile(suffix=".wav", mode="wb") as wav:
-        audio_16khz.export(wav.name, format="wav")
+        # Convert and truncate audio using ffmpeg
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-i",
+                str(path),
+                "-ar",
+                "16000",
+                "-t",
+                "60",
+                wav.name,
+            ],
+            check=True,
+        )
+
         transcription = (
             subprocess.check_output(
                 f"cd {WHISPER_CPP} && ./build/bin/whisper-cli -nt -f {wav.name} 2>/dev/null",

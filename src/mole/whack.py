@@ -13,7 +13,9 @@ OBSERVER_JOIN_INTERVAL = 1  # seconds
 def whack() -> None:
     """A long-lived watcher process that will react to certain events."""
 
-    user = json.loads(subprocess.check_output("op user get --me --format=json", shell=True))
+    user = json.loads(
+        subprocess.check_output("op user get --me --format=json", shell=True)
+    )
     typer.echo(f"Running as {user['name']} <{user['email']}> (id: {user['id']})")
 
     # Setup

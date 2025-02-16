@@ -85,14 +85,25 @@ class Project:
             try:
                 if isinstance(ref, Path):
                     output = (
-                        subprocess.check_output(["nb", "ls", "home:", "--no-color", "--filenames", str(ref)])
+                        subprocess.check_output(
+                            ["nb", "ls", "home:", "--no-color", "--filenames", str(ref)]
+                        )
                         .decode()
                         .strip()
                     )
                 else:
                     output = (
                         subprocess.check_output(
-                            ["nb", "search", "home:", "--no-color", "-l", "--type", "project.yaml", f"^# {ref}$"]
+                            [
+                                "nb",
+                                "search",
+                                "home:",
+                                "--no-color",
+                                "-l",
+                                "--type",
+                                "project.yaml",
+                                f"^# {ref}$",
+                            ]
                         )
                         .decode()
                         .strip()
@@ -109,7 +120,9 @@ class Project:
                 raise RuntimeError(f"Could not parse output: {output}")
             nb_id = int(match.group(1))
 
-        record = subprocess.check_output(["nb", "show", f"home:{nb_id}", "--no-color", "--print"]).decode()
+        record = subprocess.check_output(
+            ["nb", "show", f"home:{nb_id}", "--no-color", "--print"]
+        ).decode()
         match = re.match(r"^# ([^\n]+)\n", record)
         if not match:
             raise RuntimeError(f"Could not parse output: {record}")
@@ -132,7 +145,9 @@ class Project:
             f"{mole_cmd} projects show --color=always {{}}",
         ]
         choices = "\n".join(sorted(project_names(), reverse=True))
-        choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
+        choice = (
+            subprocess.check_output(command, input=choices.encode()).decode().strip()
+        )
         return cls.load(choice)
 
     @classmethod
@@ -148,7 +163,9 @@ class Project:
             raise ValueError(f"Project {name} already exists")
 
         # First we create a 'dummy' project to get the YAML representation
-        now = datetime.fromisoformat(pendulum.now().isoformat())  # TODO pydantic doesn't like pendulum datetimes
+        now = datetime.fromisoformat(
+            pendulum.now().isoformat()
+        )  # TODO pydantic doesn't like pendulum datetimes
         data = ProjectData(created=now)
 
         dummy = cls(nb_id=-1, name=name, data=data)
@@ -169,7 +186,9 @@ class Project:
         if self.nb_id == -1:
             raise RuntimeError("Cannot get file for dummy project")
         path = Path(
-            subprocess.check_output(["nb", "ls", f"home:{self.nb_id}", "--no-color", "--paths", "--no-id"])
+            subprocess.check_output(
+                ["nb", "ls", f"home:{self.nb_id}", "--no-color", "--paths", "--no-id"]
+            )
             .decode()
             .strip()
         )
@@ -215,7 +234,7 @@ class Project:
                                         }}
                                         pane name="tasks" {{
                                                 command "{task_command[0]}"
-                                                args { " ".join(f'"{arg}"' for arg in task_command[1:])}
+                                                args {" ".join(f'"{arg}"' for arg in task_command[1:])}
                                         }}
                                 }}
                         }}
@@ -237,8 +256,8 @@ class Project:
                         }}
                 }}
 
-                molebar name="Project: { self.name }" {{
-                    { main_pane }
+                molebar name="Project: {self.name}" {{
+                    {main_pane}
                 }}
         }}
         session_serialization false
@@ -255,7 +274,9 @@ class Project:
         """
         data = self.data.model_dump(exclude_none=True)
         preamble = f"# {self.name}\n" if title else ""
-        return preamble + yaml.dump(data, Dumper=Dumper, explicit_start=True, explicit_end=True)
+        return preamble + yaml.dump(
+            data, Dumper=Dumper, explicit_start=True, explicit_end=True
+        )
 
     def write(self):
         """Write the project to disk. This is not thread-safe."""
@@ -266,13 +287,30 @@ class Project:
             self.nb_add_file(self.name, "project.yaml", self.dump(title=False))
         else:
             subprocess.check_output(
-                ["nb", "edit", f"home:{self.nb_id}", "--overwrite", "--content", self.dump(title=True)]
+                [
+                    "nb",
+                    "edit",
+                    f"home:{self.nb_id}",
+                    "--overwrite",
+                    "--content",
+                    self.dump(title=True),
+                ]
             )
         subprocess.check_output(["nb", "sync"])
 
-    def nb_add_file(self, name: str, filetype: str, content: Optional[str] = None) -> int:
+    def nb_add_file(
+        self, name: str, filetype: str, content: Optional[str] = None
+    ) -> int:
         """Add a file to the notebook"""
-        command = ["nb", "add", "home:", "--no-color", f"--type={filetype}", "--title", name]
+        command = [
+            "nb",
+            "add",
+            "home:",
+            "--no-color",
+            f"--type={filetype}",
+            "--title",
+            name,
+        ]
         if content:
             command.extend(["--content", content])
         output = subprocess.check_output(command).decode()
@@ -309,7 +347,9 @@ class ToDo:
             "nb show --color=always {}",
         ]
         choices = "None\n" + "\n".join(sorted(project.list_todos(), reverse=True))
-        choice = subprocess.check_output(command, input=choices.encode()).decode().strip()
+        choice = (
+            subprocess.check_output(command, input=choices.encode()).decode().strip()
+        )
         match = re.match(r"^\[(\w+):(\d+)\] .+$", choice)
         if not match:
             return None
@@ -343,19 +383,30 @@ class ToDo:
 
 
 ProjectOption = Annotated[
-    Optional[Project], typer.Option("--project", "-p", envvar="MOLE_PROJECT", parser=Project.load)
+    Optional[Project],
+    typer.Option("--project", "-p", envvar="MOLE_PROJECT", parser=Project.load),
 ]
-ToDoOption = Annotated[Optional[ToDo], typer.Option("--todo", "-t", envvar="MOLE_TODO", parser=ToDo.from_label)]
+ToDoOption = Annotated[
+    Optional[ToDo],
+    typer.Option("--todo", "-t", envvar="MOLE_TODO", parser=ToDo.from_label),
+]
 
 
 def project_ids() -> set[int]:
     """Return a set of project ids by querying nb."""
-    output = subprocess.check_output(["nb", "ls", "home:", "--no-color", "--type=project.yaml"]).decode()
+    output = subprocess.check_output(
+        ["nb", "ls", "home:", "--no-color", "--type=project.yaml"]
+    ).decode()
     if not output:
-        raise RuntimeError("Could not get projects, check `nb status`, there may be a git index issue.")
+        raise RuntimeError(
+            "Could not get projects, check `nb status`, there may be a git index issue."
+        )
     if "0 project.yaml items" in output:
         return set()
-    return {int(match.group(1)) for match in re.finditer(r"^\[(\d+)\] .+$", output, re.MULTILINE)}
+    return {
+        int(match.group(1))
+        for match in re.finditer(r"^\[(\d+)\] .+$", output, re.MULTILINE)
+    }
 
 
 def project_names() -> set[str]:
@@ -369,13 +420,17 @@ def project_names() -> set[str]:
     # # Project Name
     # <empty line>
     if not output:
-        raise RuntimeError("Could not get projects, check `nb status`, there may be a git index issue.")
+        raise RuntimeError(
+            "Could not get projects, check `nb status`, there may be a git index issue."
+        )
     if "0 project.yaml items" in output:
         return set()
     found = set()
     for match in re.finditer(r"^\[(\d+)\] .+\n-+\n# (.+)\n$", output, re.MULTILINE):
         if match.group(2) in found:
-            raise RuntimeError(f"Duplicate project name: {match.group(2)} (one has id {match.group(1)})")
+            raise RuntimeError(
+                f"Duplicate project name: {match.group(2)} (one has id {match.group(1)})"
+            )
         found.add(match.group(2))
     return found
 

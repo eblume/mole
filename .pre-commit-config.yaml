@@ -1,14 +1,21 @@
 repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: run-pyright
+        name: Run pyright
+        entry: uv run pyright
+        language: system
+        types: [python]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: forbid-submodules
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.7
-    hooks:
-      - id: ruff
-        args: [ --fix ]
-      - id: ruff-format

@@ -5,6 +5,7 @@ Author: James Roeder, c. May 2020
 Copied without permission in accordance with the MIT license of the containing Typer project.
 Modified slightly by Erich Blume
 """
+
 from typing import Callable, Optional, TypeVar, Union
 
 import click
@@ -13,7 +14,9 @@ import typer
 T = TypeVar("T")
 
 
-def find_command_info(typer_instance: typer.Typer, callback: Callable) -> Optional[typer.models.CommandInfo]:
+def find_command_info(
+    typer_instance: typer.Typer, callback: Callable
+) -> Optional[typer.models.CommandInfo]:
     """Return a CommandInfo that is contained within a Typer instance."""
     for command_info in typer_instance.registered_commands:
         if command_info.callback == callback:
@@ -26,9 +29,14 @@ def find_command_info(typer_instance: typer.Typer, callback: Callable) -> Option
     return None
 
 
-def find_typer_info(typer_instance: typer.Typer, callback: Callable) -> Optional[typer.models.TyperInfo]:
+def find_typer_info(
+    typer_instance: typer.Typer, callback: Callable
+) -> Optional[typer.models.TyperInfo]:
     """Return a TyperInfo that is contained within a Typer instance."""
-    if typer_instance.registered_callback is not None and typer_instance.registered_callback.callback == callback:
+    if (
+        typer_instance.registered_callback is not None
+        and typer_instance.registered_callback.callback == callback
+    ):
         return typer_instance.registered_callback
     for group in typer_instance.registered_groups:
         if group.typer_instance is not None:
@@ -61,16 +69,22 @@ def callback_to_click_command(
     return callback
 
 
-def invoke(typer_instance: typer.Typer, callback: Callable[..., T], *args, **kwargs) -> T:
+def invoke(
+    typer_instance: typer.Typer, callback: Callable[..., T], *args, **kwargs
+) -> T:
     """
     Invoke a callable that is a registered command or subcommand of the typer_instance.
 
     See `click.Context.invoke`.
     """
-    return click.get_current_context().invoke(callback_to_click_command(typer_instance, callback), *args, **kwargs)
+    return click.get_current_context().invoke(
+        callback_to_click_command(typer_instance, callback), *args, **kwargs
+    )
 
 
-def forward(typer_instance: typer.Typer, callback: Callable[..., T], *args, **kwargs) -> T:
+def forward(
+    typer_instance: typer.Typer, callback: Callable[..., T], *args, **kwargs
+) -> T:
     """
     Forward a callable that is a registered command or subcommand of the typer_instance.
 

@@ -22,10 +22,15 @@ actions:
       3. For integration tests:
          - Use @pytest.mark.skipif with environment variables
          - Document required credentials/API keys
+         - Enable integration mode by setting the environment variable `INTEGRATION_MODE` to 'true'
       4. Structure:
          - Focus each test file on specific feature/component
          - Use clear, descriptive test function names
          - Include implementation details in comments
+      5. Running Tests:
+         - Run all tests using `uv run pytest`
+         - Run a specific test using `uv run pytest tests/<test_file.py>::<test_function>`
+         - Run tests with integration mode enabled using `INTEGRATION_MODE=true uv run pytest`
 
 examples:
   - input: |

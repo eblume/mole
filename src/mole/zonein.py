@@ -15,7 +15,9 @@ from .projects import Project, ToDo
 def zonein(
     project_name: Annotated[Optional[str], typer.Argument(metavar="PROJECT")] = None,
     todo_name: Annotated[Optional[str], typer.Argument(metavar="TODO")] = None,
-    skip_todo: Annotated[bool, typer.Option("--skip-todo", "-s", help="Skip the TODO prompt")] = False,
+    skip_todo: Annotated[
+        bool, typer.Option("--skip-todo", "-s", help="Skip the TODO prompt")
+    ] = False,
 ):
     """zone in to a project, setting the environment accordingly.
 
@@ -29,7 +31,9 @@ def zonein(
     zellij_session = os.environ.get("ZELLIJ_SESSION_NAME", None)
     if zellij_session is not None:
         print(f"🐭 Already in zellij session {zellij_session}, doing nothing")
-        print("(To change projects, detach with C-o d or exit with C-q and then run mole zonein again.)")
+        print(
+            "(To change projects, detach with C-o d or exit with C-q and then run mole zonein again.)"
+        )
         # You can also use C-o w to use the session manager, which means zellij is CAPABLE of switching sessions, but
         # they don't expose that functionality to the CLI. See:
         # - https://github.com/zellij-org/zellij/pull/2962
@@ -46,13 +50,20 @@ def zonein(
     if not todo_name and not skip_todo:
         todo = ToDo.from_fzf(project)
     elif todo_name:
-        match = re.match(r"^((?P<session_name>[^:]+):)?(?P<todo_number>\d+)$", todo_name)
+        match = re.match(
+            r"^((?P<session_name>[^:]+):)?(?P<todo_number>\d+)$", todo_name
+        )
 
         if not match:
-            print(f"🐭 Error: TODO {todo_name} is not in the form `project.session_name:todo_number`")
+            print(
+                f"🐭 Error: TODO {todo_name} is not in the form `project.session_name:todo_number`"
+            )
             raise typer.Exit(1)
 
-        if match.group("session_name") and match.group("session_name") != project.session_name:
+        if (
+            match.group("session_name")
+            and match.group("session_name") != project.session_name
+        ):
             print(
                 f"🐭 Error: TODO {todo_name} is for session {match.group('session_name')}, but project {project.name} is in session {project.session_name}"
             )
@@ -72,7 +83,9 @@ def zonein(
     try:
         zellij_sessions = [
             line.strip()
-            for line in subprocess.check_output(["zellij", "list-sessions", "-n", "-s"], text=True).splitlines()
+            for line in subprocess.check_output(
+                ["zellij", "list-sessions", "-n", "-s"], text=True
+            ).splitlines()
         ]
     except subprocess.CalledProcessError:
         zellij_sessions = []
@@ -98,7 +111,9 @@ def zonein(
         with tempfile.NamedTemporaryFile("w+", suffix=".kdl") as f:
             f.write(project.zellij_layout)
             f.flush()
-            subprocess.call(["zellij", "--session", project.session_name, "--layout", f.name])
+            subprocess.call(
+                ["zellij", "--session", project.session_name, "--layout", f.name]
+            )
 
     # Print a closing log message
     logbook.append_log_footer()

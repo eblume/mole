@@ -50,7 +50,9 @@ class Logbook:
         subprocess.run(["nb", "open", log_path], check=True)
         subprocess.run(["nb", "sync", "--all"])
 
-    def append_log(self, entry: str, when: Optional[When] = None, preamble: Optional[str] = None):
+    def append_log(
+        self, entry: str, when: Optional[When] = None, preamble: Optional[str] = None
+    ):
         """Like edit_log, but instead of opening in $EDITOR, just append a new entry and sync. A header is always printed."""
         if when is None:
             when = DateTime.now()
@@ -60,7 +62,9 @@ class Logbook:
         subprocess.run(["nb", "edit", log_path, "--content", content], check=True)
         subprocess.run(["nb", "sync", "--all"])
 
-    def append_log_header(self, when: Optional[DateTime] = None, preamble: Optional[str] = None):
+    def append_log_header(
+        self, when: Optional[DateTime] = None, preamble: Optional[str] = None
+    ):
         """Like append_log, but just the header, and no sync"""
         if when is None:
             when = DateTime.now()
@@ -77,7 +81,9 @@ class Logbook:
         subprocess.run(["nb", "edit", log_path, "--content", footer], check=True)
         subprocess.run(["nb", "sync", "--all"])
 
-    def make_header(self, when: When, preamble: Optional[str], time_only: bool = False) -> str:
+    def make_header(
+        self, when: When, preamble: Optional[str], time_only: bool = False
+    ) -> str:
         """Return a markdown header for the given date or datetime."""
         # TODO it looks bad to have the full date on each entry but I can't untangle the datetime mess right now
         if isinstance(when, DateTime):
@@ -87,7 +93,9 @@ class Logbook:
                 header = f"## {when.format('dddd, MMMM Do, YYYY HH:mm')}"
         elif isinstance(when, Date):
             if time_only:
-                raise ValueError("Cannot make time-only header for Date, pass DateTime instead")
+                raise ValueError(
+                    "Cannot make time-only header for Date, pass DateTime instead"
+                )
             header = f"## {when.format('dddd, MMMM Do, YYYY')}"
         else:
             raise TypeError(f"Unexpected type {type(when)} for when")
@@ -110,9 +118,14 @@ class Logbook:
                 in_right_dir = proj_dir == cwd or proj_dir in cwd.parents
 
             has_local_logbook = False
-            if in_right_dir:  # Avoid unnecessary subprocess calls with this one weird if
+            if (
+                in_right_dir
+            ):  # Avoid unnecessary subprocess calls with this one weird if
                 has_local_logbook = (
-                    subprocess.run(["nb", "notebooks", "--local"], capture_output=True).returncode == 0
+                    subprocess.run(
+                        ["nb", "notebooks", "--local"], capture_output=True
+                    ).returncode
+                    == 0
                     if in_right_dir
                     else False
                 )
@@ -133,10 +146,25 @@ class Logbook:
             log_path = f"{title}.log.md"
 
         # If the log doesn't exist, create it
-        is_new_entry = subprocess.run(["nb", "list", log_path], capture_output=True).returncode == 1
+        is_new_entry = (
+            subprocess.run(["nb", "list", log_path], capture_output=True).returncode
+            == 1
+        )
         if is_new_entry:
             # TODO figure out a better way to handle this content 'hack'
-            subprocess.run(["nb", "add", log_path, "--title", title, "--type=log.md", "--content", " "], check=True)
+            subprocess.run(
+                [
+                    "nb",
+                    "add",
+                    log_path,
+                    "--title",
+                    title,
+                    "--type=log.md",
+                    "--content",
+                    " ",
+                ],
+                check=True,
+            )
 
         return log_path
 
@@ -149,8 +177,12 @@ class Logbook:
             raise ValueError("Cannot get global notebook without a project")
         notebooks = [
             line.strip()
-            for line in subprocess.check_output(["nb", "notebooks", "--names", "--no-color"], text=True).splitlines()
+            for line in subprocess.check_output(
+                ["nb", "notebooks", "--names", "--no-color"], text=True
+            ).splitlines()
         ]
         if self.project.session_name not in notebooks:
-            subprocess.run(["nb", "notebooks", "add", self.project.session_name], check=True)
+            subprocess.run(
+                ["nb", "notebooks", "add", self.project.session_name], check=True
+            )
         return self.project.session_name
