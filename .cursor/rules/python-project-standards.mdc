@@ -4,18 +4,22 @@ globs: *.py,pyproject.toml
 ---
 # Python Project Standards
 
-<rule>
-name: python_package_management
-description: Standards for Python package management using uv
-filters:
-  - type: file
-    pattern: "pyproject.toml"
+1. When managing Python packages:
+  - Use `uv add {package} --extra {extra}` (extras if needed) to add a dependency
+  - Use `uv add --dev {package}` for development dependencies
+  - Do not manually edit pyproject.toml for dependencies
+  - Do not use Poetry-specific configurations
 
-actions:
-  - type: suggest
-    message: |
-      When managing Python packages with uv:
-      - Use `uv add --dev {package}` for development dependencies
-      - Do not manually edit pyproject.toml for dependencies
-      - Do not use Poetry-specific configurations
-</rule>
+2. When developing a feature:
+  - Always begin by running all tests to ensure a clean slate (`uv run pytest`)
+  - Start by creating and/or updating tests to reflect the expected behavior.
+  - If needed, search for relevant documentation and make or update a rule if
+  useful information is found.
+  - Iterate in small updates, aiming to get back to 'green' as early as possible.
+  - Before finishing, run `pre-commit run --all-files` to check that the change is accepted.
+
+3. Type Checking & Types
+  - Use type checking to help guide development. Add typing to function arguments and returns.
+  - Use typing in tests.
+  - Prefer to use dataclass
+  - Avoid polymorphism, and keep 'business logic' in regular boring functions

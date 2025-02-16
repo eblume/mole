@@ -2,69 +2,20 @@
 description: Python Testing Standards
 globs: tests/*.py
 ---
-# Python Testing Standards
+Test Organization:
 
-<rule>
-name: test_organization
-description: Standards for organizing Python tests
-filters:
-  - type: directory
-    pattern: "tests/"
-  - type: file
-    pattern: "test_.*\\.py$"
-
-actions:
-  - type: suggest
-    message: |
-      Test Organization:
-      1. Place all test files in tests/ directory
-      2. Name test files with test_ prefix
-      3. For integration tests:
-         - Use @pytest.mark.skipif with environment variables
-         - Document required credentials/API keys
-         - Enable integration mode by setting the environment variable `INTEGRATION_MODE` to 'true'
-      4. Structure:
-         - Focus each test file on specific feature/component
-         - Use clear, descriptive test function names
-         - Include implementation details in comments
-      5. Running Tests:
-         - Run all tests using `uv run pytest`
-         - Run a specific test using `uv run pytest tests/<test_file.py>::<test_function>`
-         - Run tests with integration mode enabled using `INTEGRATION_MODE=true uv run pytest`
-
-examples:
-  - input: |
-      # Good test file structure
-      tests/
-      ├── test_basic.py
-      ├── test_todoist_integration.py
-      └── ...
-    output: "Correctly organized test files"
-
-metadata:
-  priority: medium
-  version: 1.0
-</rule>
-
-# Test-Driven Development (TDD) and Test Cycle
-
-<rule>
-name: tdd_and_test_cycle
-
-description: Ensure TDD practices are followed and tests are run before and after changes to maintain a green/red/green cycle.
-
-actions:
-  - type: suggest
-    message: |
-      TDD and Test Cycle:
-      1. Follow Test-Driven Development (TDD) practices:
-         - Write tests before implementing new features or fixing bugs.
-         - Ensure tests fail initially (red phase).
-         - Implement the necessary code changes to pass the tests (green phase).
-         - Refactor the code while ensuring tests still pass (green phase).
-      2. Run tests before and after making changes to ensure a green/red/green cycle is maintained.
-
-metadata:
-  priority: high
-  version: 1.0
-</rule>
+1. Place all test files in tests/ directory
+2. Name test files with test_ prefix
+3. For integration tests:
+ - Use @pytest.mark.skipif with environment variables
+ - Document required credentials/API keys
+ - Enable integration mode by setting the environment variable `INTEGRATION_MODE` to 'true'
+4. Structure:
+ - Each test module should be filled with similar tests testing similar components.
+ - Use clear, descriptive test function names
+ - Include implementation details in comments
+5. Running Tests:
+ - Run all tests using `uv run pytest`
+ - Run a specific test using `uv run pytest tests/<test_file.py>::<test_function>`
+ - Run tests with integration mode enabled using `INTEGRATION_MODE=true uv run pytest`
+ - You can use --pdb to debug, and `breakpoint()` in the code to set breakpoints
