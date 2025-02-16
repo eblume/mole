@@ -23,3 +23,7 @@ globs: *.py,pyproject.toml
   - Use typing in tests.
   - Prefer to use dataclass
   - Avoid polymorphism, and keep 'business logic' in regular boring functions
+
+4. Pre-commit:
+  - After making changes, run `pre-commit run --all-files` to ensure all hooks pass.
+  - If pre-commit makes a formatting fix, run it again to verify convergence and ensure no further changes are needed.

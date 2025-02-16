@@ -145,4 +145,5 @@ def todoist(task: str):
     """Add a task to the todo list in todoist. Has no relation to 'tasks' command."""
     from .todoist import create_task
 
-    typer.echo(create_task(task))
+    task_id = create_task(task)
+    typer.echo(f"todoist://showtask?id={str(task_id)}")

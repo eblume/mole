@@ -97,7 +97,8 @@ def handle_vm(path: Path) -> None:
     cleaned = "\n".join(
         [line.strip() for line in transcription.split("\n") if line.strip()]
     )
-    create_task(cleaned)
+    task_id = create_task(cleaned)
+    typer.echo(f"todoist://showtask?id={str(task_id)}")
 
     # Finally, unlink audio
     path.unlink()
