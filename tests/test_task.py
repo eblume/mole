@@ -12,13 +12,14 @@ def db_connection():
 
 
 def test_create_and_complete_task(db_connection):
-    # Create a new task
-    task = Task()
+    # Create a new task with a name
+    task = Task(name="Test Task")
     task.save(db_connection)
 
     # Retrieve the task and check its initial state
     retrieved_task = Task.get(db_connection, task.id)
     assert retrieved_task is not None
+    assert retrieved_task.name == "Test Task"
     assert not retrieved_task.completed
 
     # Complete the task
@@ -27,4 +28,5 @@ def test_create_and_complete_task(db_connection):
     # Retrieve the task again and check its state
     completed_task = Task.get(db_connection, task.id)
     assert completed_task is not None
+    assert completed_task.name == "Test Task"
     assert completed_task.completed
