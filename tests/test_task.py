@@ -1,6 +1,7 @@
 import sqlite3
 import pytest
 from mole.task import Task, ChoreDefinition
+from mole.chores import update_chores
 
 
 @pytest.fixture
@@ -53,7 +54,7 @@ def test_update_chores_creates_new_tasks(db_connection):
     """)
 
     # Call update_chores and check if new tasks are created
-    Task.update_chores(db_connection, chore_definitions)
+    update_chores(db_connection, chore_definitions)
 
     # Verify that new tasks are created for due chores
     tasks = db_connection.execute("SELECT name FROM tasks").fetchall()
@@ -83,7 +84,7 @@ def test_update_chores_no_new_tasks(db_connection):
     """)
 
     # Call update_chores and check if no new tasks are created
-    Task.update_chores(db_connection, chore_definitions)
+    update_chores(db_connection, chore_definitions)
 
     # Verify that no new tasks are created for chores not due
     tasks = db_connection.execute("SELECT name FROM tasks").fetchall()
