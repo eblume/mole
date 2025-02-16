@@ -45,3 +45,26 @@ metadata:
   priority: medium
   version: 1.0
 </rule>
+
+# Test-Driven Development (TDD) and Test Cycle
+
+<rule>
+name: tdd_and_test_cycle
+
+description: Ensure TDD practices are followed and tests are run before and after changes to maintain a green/red/green cycle.
+
+actions:
+  - type: suggest
+    message: |
+      TDD and Test Cycle:
+      1. Follow Test-Driven Development (TDD) practices:
+         - Write tests before implementing new features or fixing bugs.
+         - Ensure tests fail initially (red phase).
+         - Implement the necessary code changes to pass the tests (green phase).
+         - Refactor the code while ensuring tests still pass (green phase).
+      2. Run tests before and after making changes to ensure a green/red/green cycle is maintained.
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
