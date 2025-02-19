@@ -2,10 +2,11 @@ import pytest
 import os
 from mole.todoist import create_task, delete_task, task_exists
 
-
-@pytest.mark.skipif(
+pytestmark = pytest.mark.skipif(
     os.getenv("INTEGRATION_MODE") != "true", reason="Integration mode not enabled"
 )
+
+
 def test_create_and_delete_todoist_task():
     # Create a task using the mole.todoist module
     task_title = "Test Task"
