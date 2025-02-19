@@ -7,27 +7,32 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture
+def labels(request: pytest.FixtureRequest) -> list[str]:
+    param: str = request.param or ""
+    return param.split(",") + ["test"]
+
+
+@pytest.fixture
+def task(labels):
+    task_id = create_task("Test task", labels=labels)
+    yield task_id
+    delete_task(task_id)
+
+
 def test_create_and_delete_todoist_task():
-    # Create a task using the mole.todoist module
+    # This test purposefully doesn't use the task fixture
     task_title = "Test Task"
     task_id = create_task(task_title)
-
-    # Verify the task exists after creation
     assert task_exists(task_id)
-
-    # Delete the task using the mole.todoist module
-    delete_task(task_id)
-
-    # Verify the task is deleted using the mole.todoist module
-    assert not task_exists(task_id)
-
-
-def test_create_todoist_task_with_label():
-    task_id = create_task("Labeled task", labels=["test"])
-
-    assert task_exists(task_id)
-
-    assert "test" in get_task(task_id).labels
-
     delete_task(task_id)
     assert not task_exists(task_id)
+
+
+@pytest.mark.parametrize("labels", ["foo", "foo,bar"], indirect=True)
+def test_create_todoist_task_with_label(task, labels):
+    assert task_exists(task)
+    assert "foo" in get_task(task).labels
+    if "bar" in labels:
+        assert "bar" in get_task(task).labels
+    assert "test" in get_task(task).labels

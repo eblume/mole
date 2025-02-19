@@ -1,4 +1,3 @@
-import json
 import uuid
 from typing import Optional
 
@@ -8,7 +7,7 @@ from pydantic import BaseModel
 from .secrets import get_secret
 
 
-class Task(BaseModel):
+class TodoistTaskDefinition(BaseModel):
     id: int
     creator_id: int
     created_at: str
@@ -30,6 +29,12 @@ class Task(BaseModel):
     url: str
 
 
+class TodoistTaskCreate(BaseModel):
+    content: str
+    due_string: Optional[str] = None
+    labels: Optional[list[str]] = None
+
+
 def create_task(
     title: str, due: Optional[str] = None, labels: Optional[list[str]] = None
 ) -> int:
@@ -47,13 +52,8 @@ def create_task(
         "Content-Type": "application/json",
     }
 
-    document = {"content": title}
-    if due is not None:
-        document["due_string"] = due
-    if labels is not None:
-        document["labels"] = ",".join(labels)
-
-    json_data = json.dumps(document)
+    document = TodoistTaskCreate(content=title, due_string=due, labels=labels)
+    json_data = document.model_dump_json(exclude_unset=True)
     response = requests.post(
         "https://api.todoist.com/rest/v2/tasks", headers=headers, data=json_data
     )
@@ -84,7 +84,7 @@ def task_exists(task_id: int) -> bool:
     return response.status_code != 404
 
 
-def get_task(task_id: int) -> Task:
+def get_task(task_id: int) -> TodoistTaskDefinition:
     """Retrieve a task from Todoist by its ID and return its details as a Task model."""
     key = get_secret("Todoist", "credential", vault="blumeops")
     headers = {"Authorization": f"Bearer {key}"}
@@ -92,4 +92,4 @@ def get_task(task_id: int) -> Task:
         f"https://api.todoist.com/rest/v2/tasks/{task_id}", headers=headers
     )
     response.raise_for_status()
-    return Task(**response.json())
+    return TodoistTaskDefinition(**response.json())
