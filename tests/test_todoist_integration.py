@@ -1,6 +1,6 @@
 import pytest
 import os
-from mole.todoist import create_task, delete_task, task_exists
+from mole.todoist import create_task, delete_task, task_exists, get_task
 
 pytestmark = pytest.mark.skipif(
     os.getenv("INTEGRATION_MODE") != "true", reason="Integration mode not enabled"
@@ -19,4 +19,15 @@ def test_create_and_delete_todoist_task():
     delete_task(task_id)
 
     # Verify the task is deleted using the mole.todoist module
+    assert not task_exists(task_id)
+
+
+def test_create_todoist_task_with_label():
+    task_id = create_task("Labeled task", labels=["test"])
+
+    assert task_exists(task_id)
+
+    assert "test" in get_task(task_id).labels
+
+    delete_task(task_id)
     assert not task_exists(task_id)
