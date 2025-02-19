@@ -58,7 +58,7 @@ def create_task(
         "https://api.todoist.com/rest/v2/tasks", headers=headers, data=json_data
     )
     response.raise_for_status()
-    task_id = response.json()["id"]
+    task_id = int(response.json()["id"])
     return task_id
 
 

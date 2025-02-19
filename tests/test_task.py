@@ -1,15 +1,5 @@
-import sqlite3
-import pytest
 from mole.task import Task, ChoreDefinition
 from mole.chores import update_chores
-
-
-@pytest.fixture
-def db_connection():
-    connection = sqlite3.connect(":memory:")
-    Task.create_table(connection)
-    yield connection
-    connection.close()
 
 
 def test_create_and_complete_task(db_connection):
