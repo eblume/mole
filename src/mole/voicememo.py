@@ -75,6 +75,7 @@ def handle_vm(path: Path) -> None:
         subprocess.run(
             [
                 "ffmpeg",
+                "-y",  # overwrite the tempfile
                 "-i",
                 str(path),
                 "-ar",
