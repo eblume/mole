@@ -13,7 +13,6 @@ from .projects import Project, ToDo
 from .projects import app as project_app
 from .secrets import get_secret
 from .whack import whack
-from .work import work
 from .zonein import zonein
 
 app = typer.Typer(
@@ -107,7 +106,6 @@ def log(
 app.add_typer(project_app, name="projects")
 app.command()(zonein)
 app.command()(whack)
-app.command()(work)
 
 
 @app.command(
