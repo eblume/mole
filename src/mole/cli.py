@@ -27,7 +27,7 @@ def version():
     """Print the version"""
     from . import __version__
 
-    typer.echo(f"mole version {__version__}")
+    typer.echo(f"{__version__}")
 
 
 @app.command()
