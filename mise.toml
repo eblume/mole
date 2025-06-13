@@ -36,7 +36,7 @@ echo \"✔ Created tag '$version'.\"
 git push  && git push origin $version
 echo \"✔ Pushed commits and tag for $version. Waiting 5s for GHA release workflow.\"
 sleep 5
-gha_json=$(gh run list --workflow Release --json url -b $version')
+gha_json=$(gh run list --workflow Release --json url -b $version)
 count=$(echo \"$gha_json\" | jq 'length')
 if [[ $count -gt 1 ]]; then
   echo >&2 \"Warning: found $count GHA runs for tag '$version'. Using the first one found.\"
