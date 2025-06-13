@@ -1,2 +1,35 @@
 [settings]
 python.uv_venv_auto = true
+
+[tasks.release]
+description = "Tag a new release."
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+if [ -n \"$(git status --porcelain)\" ]; then
+  echo >&2 \"Error: git working directory has uncommitted changes.\"
+  echo >&2 \"Please commit or stash them before releasing.\"
+  exit 1
+fi
+if ! uv run pytest; then
+  echo >&2 "Error: tests failed. Aborting release."
+  exit 1
+fi
+full_version=$(uv version)
+version=${full_version##* }
+if [[ -z $version ]]; then
+  echo >&2 "Could not parse version from 'uv version' output: '$full_version'"
+  exit 1
+fi
+if git tag --list | grep -Fxq \"$version\"; then
+  echo >&2 \"Error: tag '$version' already exists.\"
+  echo >&2 \"Hint: bump version first with 'uv version --bump [patch|minor|major] && git commit -am \\\"version bump for tag\\\"' and rerun this task.\"
+  exit 1
+fi
+git tag \"$version\"
+echo \"✔ Created tag '$version'.\"
+echo
+echo \"Next steps:\"
+echo \"  git push origin $version\"
+echo \"  # or, to push all tags: git push --all\"
+"""
