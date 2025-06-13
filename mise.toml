@@ -11,6 +11,11 @@ if [ -n \"$(git status --porcelain)\" ]; then
   echo >&2 \"Please commit or stash them before releasing.\"
   exit 1
 fi
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+if [ \"$current_branch\" != \"main\" ]; then
+  echo >&2 \"Error: releases must be done from 'main' branch. Current branch is '$current_branch'.\"
+  exit 1
+fi
 if ! uv run pytest; then
   echo >&2 "Error: tests failed. Aborting release."
   exit 1
@@ -28,8 +33,14 @@ if git tag --list | grep -Fxq \"$version\"; then
 fi
 git tag \"$version\"
 echo \"✔ Created tag '$version'.\"
-echo
-echo \"Next steps:\"
-echo \"  git push origin $version\"
-echo \"  # or, to push all tags: git push --all\"
+git push  && git push origin $version
+echo \"✔ Pushed commits and tag for $version. Waiting 5s for GHA release workflow.\"
+sleep 5
+gha_json=$(gh run list --workflow Release --json url -b $version')
+count=$(echo \"$gha_json\" | jq 'length')
+if [[ $count -gt 1 ]]; then
+  echo >&2 \"Warning: found $count GHA runs for tag '$version'. Using the first one found.\"
+fi
+gha_url=$(echo \"$gha_json\" | jq -r '.[0].url')
+echo "Release GHA: $gha_url"
 """
