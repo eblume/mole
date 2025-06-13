@@ -1,6 +1,6 @@
 [project]
 name = "mole"
-version = "0.10.5"
+version = "1.0.0"
 description = "Personal automation tool"
 readme = "README.md"
 requires-python = ">=3.11"

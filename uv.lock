@@ -175,7 +175,7 @@ wheels = [
 
 [[package]]
 name = "mole"
-version = "0.10.5"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "pendulum" },
