@@ -28,7 +28,7 @@ if [[ -z $version ]]; then
 fi
 if git tag --list | grep -Fxq \"$version\"; then
   echo >&2 \"Error: tag '$version' already exists.\"
-  echo >&2 \"Hint: bump version first with 'uv version --bump [patch|minor|major] && git commit -a' and rerun this task.\"
+  echo >&2 \"Hint: bump version first with 'uv version --bump [patch|minor|major]' and rerun this task.\"
   exit 1
 fi
 git tag \"$version\"
