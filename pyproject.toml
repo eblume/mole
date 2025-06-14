@@ -29,4 +29,5 @@ dev = [
     "pre-commit>=4.1.0",
     "pyright[nodejs]>=1.1.394",
     "pytest>=8.3.4",
+    "pytest-freezer>=0.4.9",
 ]
