@@ -35,8 +35,9 @@ def test_no_chores_due_after_all_marked_done(
         chore_state.mark_complete(chore.name)
 
 
-@pytest.fixture(params=list(range(10)))
+@pytest.fixture(params=list(range(15)))
 def fizzbuzz_day(chore_state: ChoreState, freezer, request) -> int:
+    """Time-travelling fizzbuzz for chores"""
     when = pendulum.now()
     days = 0
     freezer.move_to(when.strftime("%Y-%m-%d"))
