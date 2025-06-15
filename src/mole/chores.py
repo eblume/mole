@@ -1,47 +1,73 @@
-import sqlite3
-from typing import Optional, List
+import datetime as dt
+from dataclasses import dataclass, field
+from pathlib import Path
+
 import appdirs
-from datetime import datetime, timedelta
-from .task import Task, ChoreDefinition
+import pendulum
+from sqlite_utils.db import Database, Table
 
 
-def update_chores(
-    connection: Optional[sqlite3.Connection] = None,
-    chore_definitions: List[ChoreDefinition] = [],
-):
-    if connection is None:
-        db_path = appdirs.user_cache_dir("mole", "") + "/task.db"
-        connection = sqlite3.connect(db_path)
+COMPLETIONS_TABLE = "chore_completions"
 
-    with connection:
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS chore_completions (
-                chore_name TEXT PRIMARY KEY,
-                last_completed DATE
-            )
-        """)
 
-        for chore in chore_definitions:
-            name = chore.name
-            interval_days = chore.interval_days
-            last_completed = connection.execute(
-                "SELECT last_completed FROM chore_completions WHERE chore_name = ?",
-                (name,),
-            ).fetchone()
+@dataclass
+class ChoreDefinition:
+    name: str
+    interval_days: int
 
-            if last_completed:
-                last_completed_date = datetime.strptime(last_completed[0], "%Y-%m-%d")
-                if datetime.now() - last_completed_date >= timedelta(
-                    days=interval_days
-                ):
-                    Task(name=name).save(connection)
-                    connection.execute(
-                        "UPDATE chore_completions SET last_completed = DATE('now') WHERE chore_name = ?",
-                        (name,),
-                    )
-            else:
-                Task(name=name).save(connection)
-                connection.execute(
-                    "INSERT INTO chore_completions (chore_name, last_completed) VALUES (?, DATE('now'))",
-                    (name,),
-                )
+
+@dataclass
+class ChoreState:
+    db: Database
+    chore_definitions: list[ChoreDefinition] = field(default_factory=list)
+
+    @classmethod
+    def from_sqlite_file(
+        cls, path: Path = Path(appdirs.user_cache_dir("mole", "")) / "task.db"
+    ):
+        return cls(db=Database(path))
+
+    @classmethod
+    def from_volatile_memory(cls):
+        return cls(db=Database(memory=True))
+
+    @property
+    def due_chores(self) -> list[ChoreDefinition]:
+        return [
+            chore for chore in self.chore_definitions if chore_is_due(self.db, chore)
+        ]
+
+    def __post_init__(self) -> None:
+        table = get_table(self.db, COMPLETIONS_TABLE)
+        table.create(
+            {
+                "name": str,
+                "completed_at": dt.datetime,
+            }
+        )
+
+    def mark_complete(self, name: str) -> None:
+        table = get_table(self.db, COMPLETIONS_TABLE)
+        table.insert({"name": name, "completed_at": pendulum.now()})
+
+
+def chore_is_due(db: Database, chore: ChoreDefinition) -> bool:
+    cursor = db.execute(
+        f"select completed_at from {COMPLETIONS_TABLE} where name = ? order by completed_at limit 1",
+        [chore.name],
+    )
+    row = cursor.fetchone()
+    if row is None:
+        return True
+    when = pendulum.parse(row[0])
+    assert isinstance(when, pendulum.DateTime)
+    now = pendulum.now()
+    diff = when.diff(now)
+    return diff.in_days() >= chore.interval_days
+
+
+def get_table(db: Database, name: str) -> Table:
+    """Retrieve a Table, never a view, type safe"""
+    table = db[name]
+    assert isinstance(table, Table)
+    return table
